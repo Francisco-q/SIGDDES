@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from "react";
 import '/src/styles/PuntoFormPopup.css'; // Importa estilos para el popup
 
-const PuntoFormPopup = ({ punto, onSave, onClose }) => {
-  const [formData, setFormData] = useState({
+interface Punto {
+  name: string;
+  description: string;
+  photoUrl: string;
+}
+
+interface PuntoFormPopupProps {
+  punto: Punto | null;
+  onSave: (formData: Punto) => void;
+  onClose: () => void;
+}
+
+const PuntoFormPopup: React.FC<PuntoFormPopupProps> = ({ punto, onSave, onClose }) => {
+  const [formData, setFormData] = useState<Punto>({
     name: "",
     description: "",
     photoUrl: "",
@@ -18,7 +30,7 @@ const PuntoFormPopup = ({ punto, onSave, onClose }) => {
     }
   }, [punto]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -26,7 +38,7 @@ const PuntoFormPopup = ({ punto, onSave, onClose }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave(formData); // Guardar la información del punto
     onClose(); // Cerrar el popup después de guardar

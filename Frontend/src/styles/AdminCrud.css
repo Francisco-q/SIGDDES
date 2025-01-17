@@ -1,0 +1,22 @@
+.admin-crud {
+    padding: 20px;
+  }
+  
+  .admin-crud table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .admin-crud th, .admin-crud td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  .admin-crud th {
+    background-color: #f4f4f4;
+  }
+  
+  .admin-crud button {
+    margin-right: 5px;
+  }

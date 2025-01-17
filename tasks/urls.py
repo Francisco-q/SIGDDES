@@ -4,6 +4,7 @@ from tasks import views
 
 router = routers.DefaultRouter()
 router.register(r'tasks', views.TaskViewSet, 'task')
+router.register(r'puntos', views.SafeSpaceViewSet, 'punto')
 
 urlpatterns = [
     path('api/v1/', include(router.urls))

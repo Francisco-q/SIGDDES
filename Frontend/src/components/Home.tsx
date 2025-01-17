@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Home = () => {
+const Home: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleSelectCampus = (campus) => {
+  const handleSelectCampus = (campus: string) => {
     navigate(`/mapa/${campus}`); // Redirige a la ruta del mapa seleccionado
   };
 

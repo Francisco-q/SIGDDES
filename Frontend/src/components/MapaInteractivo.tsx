@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import usePuntos from '../hooks/usePuntos';
+import InfoPunto from './InfoPunto';
 import '/src/styles/MapaInteractivo.css';
 
 const MapaInteractivo: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
+
+  // Verificar si el parámetro campus está definido
+  if (!campus) {
+    return <div>Error: Campus no definido</div>;
+  }
+
   const {
     puntos,
     puntoSeleccionado,
+    setPuntoSeleccionado,
     handleCrearPunto,
     handleClickPunto,
     handleEditarPunto,
@@ -23,6 +31,7 @@ const MapaInteractivo: React.FC = () => {
 
   const [dragging, setDragging] = useState(false);
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
+  const [mostrandoInfo, setMostrandoInfo] = useState(false); // Estado para manejar la visibilidad del popup informativo
 
   // Función para manejar el zoom
   const handleZoomIn = () => {
@@ -33,12 +42,13 @@ const MapaInteractivo: React.FC = () => {
     setTransform({ ...transform, scale: transform.scale * 0.9 });
   };
 
-  // Función para manejar el arrastre
+  // Función para manejar el inicio del arrastre
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     setStartCoords({ x: e.clientX, y: e.clientY });
   };
 
+  // Función para manejar el movimiento del arrastre
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!dragging) return;
     const dx = e.clientX - startCoords.x;
@@ -51,6 +61,7 @@ const MapaInteractivo: React.FC = () => {
     });
   };
 
+  // Función para manejar el fin del arrastre
   const handleMouseUp = () => {
     setDragging(false);
   };
@@ -59,6 +70,30 @@ const MapaInteractivo: React.FC = () => {
   const activarCreacionPuntos = () => {
     setTransform({ scale: 1, translateX: 0, translateY: 0 });
     setCrearPuntoActivo(true);
+  };
+
+  // Función para guardar la información editada del punto
+  const handleSaveEdit = (info: string) => {
+    handleEditarPunto(info);
+    setMostrandoInfo(false); // Ocultar el popup informativo después de guardar
+  };
+
+  // Función para eliminar el punto seleccionado
+  const handleDeletePunto = () => {
+    handleEliminarPunto();
+    setMostrandoInfo(false); // Ocultar el popup informativo después de eliminar
+  };
+
+  // Función para manejar el clic en un punto
+  const handleClickPuntoLocal = (punto: Punto, e: React.MouseEvent<SVGCircleElement, MouseEvent>) => {
+    e.stopPropagation(); // Evita que se cree otro punto al seleccionar uno
+    setPuntoSeleccionado(punto);
+    setMostrandoInfo(true); // Mostrar el popup informativo
+  };
+
+  // Función para cerrar el popup informativo
+  const handleCloseInfo = () => {
+    setMostrandoInfo(false); // Ocultar el popup informativo
   };
 
   // Determinar la imagen del mapa en función del campus seleccionado
@@ -127,26 +162,21 @@ const MapaInteractivo: React.FC = () => {
               cy={punto.y}
               r="10"
               fill="red"
-              onClick={(e) => handleClickPunto(punto, e)} // Pasar el evento al manejador
+              onClick={(e) => handleClickPuntoLocal(punto, e)} // Pasar el evento al manejador
               style={{ cursor: 'pointer' }}
             />
           ))}
         </svg>
       </div>
 
-      {/* Botones de administración (Crear, Editar, Eliminar) */}
-      {modoAdmin && (
-        <div className="admin-buttons">
-          <button onClick={handleEditarPunto} disabled={!puntoSeleccionado}>Editar Punto</button>
-          <button onClick={handleEliminarPunto} disabled={!puntoSeleccionado}>Eliminar Punto</button>
-        </div>
-      )}
-
-      {/* Información del punto seleccionado (visible para cualquier usuario) */}
-      {puntoSeleccionado && (
-        <div className="info-popup">
-          <p>{puntoSeleccionado.info}</p>
-        </div>
+      {/* Popup informativo del punto seleccionado */}
+      {mostrandoInfo && puntoSeleccionado && (
+        <InfoPunto
+          punto={puntoSeleccionado}
+          onClose={handleCloseInfo}
+          onSave={handleSaveEdit}
+          onDelete={handleDeletePunto}
+        />
       )}
     </div>
   );

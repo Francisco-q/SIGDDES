@@ -49,18 +49,15 @@ const usePuntos = (campus: string) => {
   };
 
   // Función para editar la información del punto seleccionado
-  const handleEditarPunto = () => {
+  const handleEditarPunto = (nuevaInfo: string) => {
     if (puntoSeleccionado) {
-      const nuevaInfo = prompt("Edita la información del punto:", puntoSeleccionado.info);
-      if (nuevaInfo) {
-        setPuntosPorCampus((prevState) => ({
-          ...prevState,
-          [campus]: prevState[campus].map((punto) =>
-            punto.id === puntoSeleccionado.id ? { ...punto, info: nuevaInfo } : punto
-          ),
-        }));
-        setPuntoSeleccionado(null);
-      }
+      setPuntosPorCampus((prevState) => ({
+        ...prevState,
+        [campus]: prevState[campus].map((punto) =>
+          punto.id === puntoSeleccionado.id ? { ...punto, info: nuevaInfo } : punto
+        ),
+      }));
+      setPuntoSeleccionado(null);
     }
   };
 
@@ -78,6 +75,7 @@ const usePuntos = (campus: string) => {
   return {
     puntos: puntosPorCampus[campus], // Devolvemos los puntos correspondientes al campus actual
     puntoSeleccionado,
+    setPuntoSeleccionado,
     handleCrearPunto,
     handleClickPunto,
     handleEditarPunto,

@@ -7,7 +7,6 @@ import '/src/styles/MapaInteractivo.css';
 const MapaInteractivo: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
 
-  // Verificar si el parámetro campus está definido
   if (!campus) {
     return <div>Error: Campus no definido</div>;
   }
@@ -31,9 +30,8 @@ const MapaInteractivo: React.FC = () => {
 
   const [dragging, setDragging] = useState(false);
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
-  const [mostrandoInfo, setMostrandoInfo] = useState(false); // Estado para manejar la visibilidad del popup informativo
+  const [mostrandoInfo, setMostrandoInfo] = useState(false);
 
-  // Función para manejar el zoom
   const handleZoomIn = () => {
     setTransform({ ...transform, scale: transform.scale * 1.1 });
   };
@@ -42,13 +40,11 @@ const MapaInteractivo: React.FC = () => {
     setTransform({ ...transform, scale: transform.scale * 0.9 });
   };
 
-  // Función para manejar el inicio del arrastre
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     setStartCoords({ x: e.clientX, y: e.clientY });
   };
 
-  // Función para manejar el movimiento del arrastre
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!dragging) return;
     const dx = e.clientX - startCoords.x;
@@ -61,42 +57,35 @@ const MapaInteractivo: React.FC = () => {
     });
   };
 
-  // Función para manejar el fin del arrastre
   const handleMouseUp = () => {
     setDragging(false);
   };
 
-  // Función para activar la creación de puntos y restablecer el mapa
   const activarCreacionPuntos = () => {
     setTransform({ scale: 1, translateX: 0, translateY: 0 });
     setCrearPuntoActivo(true);
   };
 
-  // Función para guardar la información editada del punto
   const handleSaveEdit = (info: string) => {
     handleEditarPunto(info);
-    setMostrandoInfo(false); // Ocultar el popup informativo después de guardar
+    setMostrandoInfo(false);
   };
 
-  // Función para eliminar el punto seleccionado
   const handleDeletePunto = () => {
     handleEliminarPunto();
-    setMostrandoInfo(false); // Ocultar el popup informativo después de eliminar
+    setMostrandoInfo(false);
   };
 
-  // Función para manejar el clic en un punto
   const handleClickPuntoLocal = (punto: Punto, e: React.MouseEvent<SVGCircleElement, MouseEvent>) => {
-    e.stopPropagation(); // Evita que se cree otro punto al seleccionar uno
+    e.stopPropagation();
     setPuntoSeleccionado(punto);
-    setMostrandoInfo(true); // Mostrar el popup informativo
+    setMostrandoInfo(true);
   };
 
-  // Función para cerrar el popup informativo
   const handleCloseInfo = () => {
-    setMostrandoInfo(false); // Ocultar el popup informativo
+    setMostrandoInfo(false);
   };
 
-  // Determinar la imagen del mapa en función del campus seleccionado
   const getMapaSrc = () => {
     switch (campus) {
       case 'Talca':
@@ -128,13 +117,11 @@ const MapaInteractivo: React.FC = () => {
         </button>
       )}
 
-      {/* Botones de zoom */}
       <div className="zoom-buttons">
         <button onClick={handleZoomIn}>+</button>
         <button onClick={handleZoomOut}>-</button>
       </div>
 
-      {/* Mapa SVG */}
       <div
         className="svg-container"
         onMouseDown={handleMouseDown}
@@ -146,7 +133,7 @@ const MapaInteractivo: React.FC = () => {
           width="1000"
           height="800"
           className="svg-map"
-          onClick={handleCrearPunto} // Permite crear puntos solo si está activo
+          onClick={handleCrearPunto}
           style={{
             cursor: modoAdmin ? 'crosshair' : 'default',
             transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
@@ -154,7 +141,6 @@ const MapaInteractivo: React.FC = () => {
         >
           <image href={getMapaSrc()} width="1000" height="800" />
 
-          {/* Renderizar los puntos en el mapa */}
           {puntos.map((punto) => (
             <circle
               key={punto.id}
@@ -162,14 +148,13 @@ const MapaInteractivo: React.FC = () => {
               cy={punto.y}
               r="10"
               fill="red"
-              onClick={(e) => handleClickPuntoLocal(punto, e)} // Pasar el evento al manejador
+              onClick={(e) => handleClickPuntoLocal(punto, e)}
               style={{ cursor: 'pointer' }}
             />
           ))}
         </svg>
       </div>
 
-      {/* Popup informativo del punto seleccionado */}
       {mostrandoInfo && puntoSeleccionado && (
         <InfoPunto
           punto={puntoSeleccionado}

@@ -4,7 +4,7 @@ from tasks.models import SafeSpace
 class SafeSpaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = SafeSpace
-        fields = '__all__'
+        fields = ['id', 'x', 'y', 'info', 'campus']
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:

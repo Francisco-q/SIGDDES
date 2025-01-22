@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny
 
 router = routers.DefaultRouter()
 router.register(r'tasks', TaskViewSet, 'task')
-router.register(r'puntos', SafeSpaceViewSet)
+router.register(r'puntos', SafeSpaceViewSet, basename='safespace')
 
 schema_view = get_schema_view(
     openapi.Info(

@@ -1,13 +1,12 @@
-from rest_framework import routers
 from django.urls import path, include
-from tasks import views
+from rest_framework.routers import DefaultRouter
+from tasks.views import TaskViewSet, home
 
-router = routers.DefaultRouter()
-router.register(r'tasks', views.TaskViewSet, 'task')
-router.register(r'puntos', views.SafeSpaceViewSet, 'punto')
+router = DefaultRouter()
+router.register(r'tasks', TaskViewSet)
 
 urlpatterns = [
-    path('api/v1/', include(router.urls))
+    path('', home),
+    path('api/', include(router.urls)),
 ]
-
 #esto genera las rutas para el api rest de la app tasks get, post, put, delete

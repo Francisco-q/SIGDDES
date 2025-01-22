@@ -30,10 +30,13 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ punto, onClose, onSave, onDelete 
   return (
     <div className="info-punto-popup">
       <div className="info-punto-content">
-        <h2>Información del Punto</h2>
-        <p>ID: {punto.id}</p>
-        <p>Coordenadas: ({punto.x}, {punto.y})</p>
-        {editando ? (
+        <button className="close-button" onClick={onClose}>x</button>
+        <div className='data-punto'>
+          <h2>Información del Punto</h2>
+          <p>ID: {punto.id}</p>
+          <p>Coordenadas: ({punto.x}, {punto.y})</p>
+
+          {editando ? (
           <div>
             <label>
               Información:
@@ -48,13 +51,15 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ punto, onClose, onSave, onDelete 
         ) : (
           <p>Información: {punto.info}</p>
         )}
-        <button onClick={onClose}>Cerrar</button>
         {editando ? null : (
           <>
             <button onClick={handleEditClick}>Editar Punto</button>
             <button onClick={onDelete}>Eliminar Punto</button>
           </>
         )}
+        </div>
+        
+        
       </div>
     </div>
   );

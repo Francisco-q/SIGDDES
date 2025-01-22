@@ -56,51 +56,43 @@
   }
   
 
-  .edit-punto-form {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    z-index: 1000;
-  }
   
-  .edit-punto-form form {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .edit-punto-form label {
-    margin-bottom: 10px;
-  }
-  
-  .edit-punto-form button {
-    margin-top: 10px;
-  }
-
-
   .info-punto-popup {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgb(110, 104, 104);
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    top: 0;
+    right: 0;
+    width: 400px; /* Ancho del popup */
+    height: 100%; /* Utilizar todo el alto */
+    background-color: rgb(104, 7, 117);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto; /* Permitir desplazamiento vertical si el contenido es demasiado alto */
   }
   
   .info-punto-content {
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start; /* Alinear el contenido al inicio */
   }
   
+  .close-button {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .data-punto {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 20px;
+    padding-left: 10%;
+  }
   .info-punto-content h2 {
     margin-bottom: 10px;
   }

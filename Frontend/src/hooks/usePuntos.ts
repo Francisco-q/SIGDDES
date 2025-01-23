@@ -18,9 +18,19 @@ const usePuntos = (campus: string) => {
     Santiago: [],
   });
 
+  const [partidasPorCampus, setPartidasPorCampus] = useState<{ [key: string]: Punto[] }>({
+    Talca: [],
+    Curico: [],
+    Linares: [],
+    Colchagua: [],
+    Pehuenche: [],
+    Santiago: [],
+  });
+
   const [puntoSeleccionado, setPuntoSeleccionado] = useState<Punto | null>(null);
   const [modoAdmin, setModoAdmin] = useState(true);
   const [crearPuntoActivo, setCrearPuntoActivo] = useState(false);
+  const [crearPartidaActivo, setCrearPartidaActivo] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [transform, setTransform] = useState({ scale: 1, translateX: 0, translateY: 0 });
 
@@ -38,7 +48,21 @@ const usePuntos = (campus: string) => {
       }
     };
 
+    const cargarPartidas = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/partidas/?campus=${campus}`);
+        const data = await response.json();
+        setPartidasPorCampus((prevState) => ({
+          ...prevState,
+          [campus]: data,
+        }));
+      } catch (error) {
+        console.error('Error al cargar las partidas:', error);
+      }
+    };
+
     cargarPuntos();
+    cargarPartidas();
   }, [campus]);
 
   const handleCrearPunto = async (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
@@ -70,6 +94,37 @@ const usePuntos = (campus: string) => {
     }
 
     setCrearPuntoActivo(false);
+  };
+
+  const handleCrearPartida = async (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    if (!modoAdmin || !crearPartidaActivo) return;
+
+    const svg = svgRef.current!.getBoundingClientRect();
+    const x = (e.clientX - svg.left - transform.translateX) / transform.scale;
+    const y = (e.clientY - svg.top - transform.translateY) / transform.scale;
+
+    const nuevaPartida = { x, y, info: 'Nuevo Punto de Partida', campus };
+
+    try {
+      const response = await fetch('http://localhost:8000/api/partidas/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nuevaPartida),
+      });
+
+      const data = await response.json();
+
+      setPartidasPorCampus((prevState) => ({
+        ...prevState,
+        [campus]: [...prevState[campus], data],
+      }));
+    } catch (error) {
+      console.error('Error al crear la partida:', error);
+    }
+
+    setCrearPartidaActivo(false);
   };
 
   const handleClickPunto = (punto: Punto, e: React.MouseEvent<SVGCircleElement, MouseEvent>) => {
@@ -127,9 +182,11 @@ const usePuntos = (campus: string) => {
 
   return {
     puntos: puntosPorCampus[campus],
+    partidas: partidasPorCampus[campus],
     puntoSeleccionado,
     setPuntoSeleccionado,
     handleCrearPunto,
+    handleCrearPartida,
     handleClickPunto,
     handleEditarPunto,
     handleEliminarPunto,
@@ -137,6 +194,8 @@ const usePuntos = (campus: string) => {
     setModoAdmin,
     crearPuntoActivo,
     setCrearPuntoActivo,
+    crearPartidaActivo,
+    setCrearPartidaActivo,
     svgRef,
     transform,
     setTransform,

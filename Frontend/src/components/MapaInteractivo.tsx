@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import usePuntos from '../hooks/usePuntos';
+import Home from './Home';
 import InfoPunto from './InfoPunto';
 import '/src/styles/MapaInteractivo.css';
 
@@ -13,9 +14,11 @@ const MapaInteractivo: React.FC = () => {
 
   const {
     puntos,
+    partidas,
     puntoSeleccionado,
     setPuntoSeleccionado,
     handleCrearPunto,
+    handleCrearPartida,
     handleClickPunto,
     handleEditarPunto,
     handleEliminarPunto,
@@ -23,6 +26,8 @@ const MapaInteractivo: React.FC = () => {
     setModoAdmin,
     crearPuntoActivo,
     setCrearPuntoActivo,
+    crearPartidaActivo,
+    setCrearPartidaActivo,
     svgRef,
     transform,
     setTransform,
@@ -64,6 +69,13 @@ const MapaInteractivo: React.FC = () => {
   const activarCreacionPuntos = () => {
     setTransform({ scale: 1, translateX: 0, translateY: 0 });
     setCrearPuntoActivo(true);
+    setCrearPartidaActivo(false);
+  };
+
+  const activarCreacionPartidas = () => {
+    setTransform({ scale: 1, translateX: 0, translateY: 0 });
+    setCrearPartidaActivo(true);
+    setCrearPuntoActivo(false);
   };
 
   const handleSaveEdit = (info: string) => {
@@ -106,15 +118,19 @@ const MapaInteractivo: React.FC = () => {
   };
 
   return (
-    <div className="map-container">
-      <h1>{modoAdmin ? 'Admin' : 'Usuario'}</h1>
+    <><Home /><div className="map-container">
       <button onClick={() => setModoAdmin(!modoAdmin)}>
         {modoAdmin ? 'Cambiar a Modo Usuario' : 'Cambiar a Modo Admin'}
       </button>
       {modoAdmin && (
-        <button onClick={activarCreacionPuntos}>
-          Activar Creación de Puntos
-        </button>
+        <>
+          <button onClick={activarCreacionPuntos}>
+            Activar Creación de Puntos
+          </button>
+          <button onClick={activarCreacionPartidas}>
+            Activar Creación de Puntos de Partida
+          </button>
+        </>
       )}
 
       <div className="zoom-buttons">
@@ -133,7 +149,7 @@ const MapaInteractivo: React.FC = () => {
           width="1000"
           height="800"
           className="svg-map"
-          onClick={handleCrearPunto}
+          onClick={crearPuntoActivo ? handleCrearPunto : handleCrearPartida}
           style={{
             cursor: modoAdmin ? 'crosshair' : 'default',
             transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
@@ -149,8 +165,18 @@ const MapaInteractivo: React.FC = () => {
               r="10"
               fill="red"
               onClick={(e) => handleClickPuntoLocal(punto, e)}
-              style={{ cursor: 'pointer' }}
-            />
+              style={{ cursor: 'pointer' }} />
+          ))}
+
+          {partidas.map((partida) => (
+            <circle
+              key={partida.id}
+              cx={partida.x}
+              cy={partida.y}
+              r="10"
+              fill="blue"
+              onClick={(e) => handleClickPuntoLocal(partida, e)}
+              style={{ cursor: 'pointer' }} />
           ))}
         </svg>
       </div>
@@ -160,10 +186,9 @@ const MapaInteractivo: React.FC = () => {
           punto={puntoSeleccionado}
           onClose={handleCloseInfo}
           onSave={handleSaveEdit}
-          onDelete={handleDeletePunto}
-        />
+          onDelete={handleDeletePunto} />
       )}
-    </div>
+    </div></>
   );
 };
 

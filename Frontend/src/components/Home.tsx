@@ -10,7 +10,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-container">
-      <h1>Seleccione un Campus</h1>
+      <h1>Gestor Administrativo</h1>
       <button onClick={() => handleSelectCampus('Talca')}>Campus Talca</button>
       <button onClick={() => handleSelectCampus('Curico')}>Campus Curicó</button>
       <button onClick={() => handleSelectCampus('Linares')}>Campus Linares</button>

@@ -1,5 +1,6 @@
 .map-container {
     position: relative;
+    padding-top: 10px; /* Añadir espacio en la parte superior */
     width: 100vw; /* 100% del ancho de la ventana */
     height: 100vh; /* 100% de la altura de la ventana */
     overflow: hidden; /* Ocultar el desbordamiento */

@@ -1,107 +1,118 @@
+/* Contenedor principal: ocupa todo el viewport, ideal para dispositivos móviles y desktop */
 .map-container {
-    position: relative;
-    padding-top: 10px; /* Añadir espacio en la parte superior */
-    width: 100vw; /* 100% del ancho de la ventana */
-    height: 100vh; /* 100% de la altura de la ventana */
-    overflow: hidden; /* Ocultar el desbordamiento */
-  }
-  
-  .svg-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden; /* Ocultar el desbordamiento */
-    position: relative;
-  }
-  
-  .svg-map {
-    cursor: grab;
-    max-width: none; /* Permitir que el mapa se salga del contenedor */
-    max-height: none; /* Permitir que el mapa se salga del contenedor */
-  }
-  
-  .svg-map:active {
-    cursor: grabbing;
-  }
-  
-  .zoom-buttons {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .zoom-buttons button {
-    margin: 5px;
-    padding: 10px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-  .admin-buttons {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .admin-buttons button {
-    margin: 5px;
-    padding: 10px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
+  position: relative;
+  padding-top: 10px; /* Espacio superior */
+  width: 100vw;     /* 100% del ancho del viewport */
+  height: 100vh;    /* 100% de la altura del viewport */
+  overflow: hidden;
+}
 
-  
-  .info-punto-popup {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 400px; /* Ancho del popup */
-    height: 100%; /* Utilizar todo el alto */
-    background-color: rgb(104, 7, 117);
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    overflow-y: auto; /* Permitir desplazamiento vertical si el contenido es demasiado alto */
-  }
-  
-  .info-punto-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Alinear el contenido al inicio */
-  }
-  
-  .close-button {
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-  }
-  
-  .data-punto {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-top: 20px;
-    padding-left: 10%;
-  }
-  .info-punto-content h2 {
-    margin-bottom: 10px;
-  }
-  
-  .info-punto-content p {
-    margin: 5px 0;
-  }
-  
-  .info-punto-content button {
-    margin-top: 10px;
-  }
+/* Contenedor del SVG: centra el mapa con Flexbox */
+.svg-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Estilos para el mapa SVG */
+.svg-map {
+  cursor: grab;
+  max-width: none; /* Permite que el mapa se expanda sin restricciones */
+  max-height: none;
+}
+
+.svg-map:active {
+  cursor: grabbing;
+}
+
+/* Botones de zoom, posicionados en la esquina superior derecha */
+.zoom-buttons {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  width: 50px; /* Puedes ajustar con rem, por ejemplo: 3.125rem (50px/16) */
+  padding: 10px; /* Uso de unidades relativas (rem o %), aquí se puede ajustar según el diseño */
+  background-color: rgba(58, 58, 58, 0.447);
+  border-radius: 4px; /* Suaviza las esquinas */
+}
+
+.zoom-buttons button {
+  margin: 5px 0;
+  padding: 10px;
+  font-size: 1rem; /* Escalable según la fuente base */
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Botones de administración, posicionados en la esquina inferior izquierda */
+.admin-buttons {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-buttons button {
+  margin: 5px 0;
+  padding: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Popup de información */
+.info-punto-popup {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100%;
+  background-color: rgb(104, 7, 117);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+/* Contenido del popup */
+.info-punto-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.data-punto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding-left: 10%;
+}
+
+.info-punto-content h2 {
+  margin-bottom: 10px;
+}
+
+.info-punto-content p {
+  margin: 5px 0;
+}
+
+.info-punto-content button {
+  margin-top: 10px;
+}

@@ -1,3 +1,4 @@
+import { Box, Button, ButtonGroup } from '@mui/material';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import usePuntos from '../hooks/usePuntos';
@@ -17,7 +18,13 @@ import {
   handleZoomIn,
   handleZoomOut,
 } from './mapaHelpers';
-import '/src/styles/MapaInteractivo.css';
+import {
+  adminButtonsStyle,
+  mapContainerStyle,
+  svgContainerStyle,
+  svgMapStyle,
+  zoomButtonsStyle
+} from './MapaInteractivoStyles';
 
 const MapaInteractivo: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
@@ -52,62 +59,66 @@ const MapaInteractivo: React.FC = () => {
   return (
     <>
       <Home />
-      <div className="map-container">
-        <button onClick={() => setModoAdmin(!modoAdmin)}>
-          {modoAdmin ? 'Cambiar a Modo Usuario' : 'Cambiar a Modo Admin'}
-        </button>
-        {modoAdmin && (
-          <>
-            <button
-              onClick={() =>
-                activarCreacionPuntos(setTransform, setCrearPuntoActivo, setCrearPartidaActivo)
-              }
-            >
-              Activar Creación de Puntos
-            </button>
-            <button
-              onClick={() =>
-                activarCreacionPartidas(setTransform, setCrearPartidaActivo, setCrearPuntoActivo)
-              }
-            >
-              Activar Creación de Puntos de Partida
-            </button>
-          </>
-        )}
+      <Box sx={mapContainerStyle}>
+        <Box sx={{ p: 2 }}>
+          <Button
+            onClick={() => setModoAdmin(!modoAdmin)}
+            variant="contained"
+            sx={{ mb: 2 }}
+          >
+            {modoAdmin ? 'Cambiar a Modo Usuario' : 'Cambiar a Modo Admin'}
+          </Button>
 
-        <div className="zoom-buttons">
-          <button onClick={() => handleZoomIn(transform, setTransform)}>+</button>
-          <button onClick={() => handleZoomOut(transform, setTransform)}>-</button>
-        </div>
+          {modoAdmin && (
+            <Box sx={adminButtonsStyle}>
+              <ButtonGroup variant="contained" sx={{ mb: 2 }}>
+                <Button
+                  onClick={() =>
+                    activarCreacionPuntos(setTransform, setCrearPuntoActivo, setCrearPartidaActivo)
+                  }
+                >
+                  Activar Creación de Puntos
+                </Button>
+                <Button
+                  onClick={() =>
+                    activarCreacionPartidas(setTransform, setCrearPartidaActivo, setCrearPuntoActivo)
+                  }
+                >
+                  Activar Creación de Puntos de Partida
+                </Button>
+              </ButtonGroup>
+            </Box>
+          )}
+        </Box>
 
-        <div
-          className="svg-container"
+        <Box sx={zoomButtonsStyle}>
+          <ButtonGroup variant="contained">
+            <Button onClick={() => handleZoomIn(transform, setTransform)}>+</Button>
+            <Button onClick={() => handleZoomOut(transform, setTransform)}>-</Button>
+          </ButtonGroup>
+        </Box>
+
+        <Box
+          sx={svgContainerStyle}
           onMouseDown={(e) => handleMouseDown(e, setDragging, setStartCoords)}
           onMouseMove={(e) =>
-            handleMouseMove(
-              e,
-              dragging,
-              startCoords,
-              setStartCoords,
-              transform,
-              setTransform
-            )
+            handleMouseMove(e, dragging, startCoords, setStartCoords, transform, setTransform)
           }
           onMouseUp={() => handleMouseUp(setDragging)}
         >
-          <svg
+          <Box
+            component="svg"
             ref={svgRef}
             width="1000"
             height="800"
-            className="svg-map"
             onClick={crearPuntoActivo ? handleCrearPunto : handleCrearPartida}
-            style={{
-              cursor: modoAdmin ? 'crosshair' : 'default',
+            sx={{
+              ...svgMapStyle,
+              cursor: modoAdmin ? 'pointer' : 'default',
               transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
             }}
           >
             <image href={getMapaSrc(campus)} width="1000" height="800" />
-
             {puntos.map((punto) => (
               <circle
                 key={punto.id}
@@ -115,11 +126,12 @@ const MapaInteractivo: React.FC = () => {
                 cy={punto.y}
                 r="10"
                 fill="red"
-                onClick={(e) => handleClickPuntoLocal(punto, e, setPuntoSeleccionado, setMostrandoInfo)}
+                onClick={(e) =>
+                  handleClickPuntoLocal(punto, e, setPuntoSeleccionado, setMostrandoInfo)
+                }
                 style={{ cursor: 'pointer' }}
               />
             ))}
-
             {partidas.map((partida) => (
               <circle
                 key={partida.id}
@@ -127,22 +139,26 @@ const MapaInteractivo: React.FC = () => {
                 cy={partida.y}
                 r="10"
                 fill="blue"
-                onClick={(e) => handleClickPuntoLocal(partida, e, setPuntoSeleccionado, setMostrandoInfo)}
+                onClick={(e) =>
+                  handleClickPuntoLocal(partida, e, setPuntoSeleccionado, setMostrandoInfo)
+                }
                 style={{ cursor: 'pointer' }}
               />
             ))}
-          </svg>
-        </div>
+          </Box>
+        </Box>
 
         {mostrandoInfo && puntoSeleccionado && (
           <InfoPunto
             punto={puntoSeleccionado}
             onClose={() => handleCloseInfo(setMostrandoInfo)}
-            onSave={(info: string) => handleSaveEdit(handleEditarPunto, setMostrandoInfo, info)}
+            onSave={(info: string) =>
+              handleSaveEdit(handleEditarPunto, setMostrandoInfo, info)
+            }
             onDelete={() => handleDeletePunto(handleEliminarPunto, setMostrandoInfo)}
           />
         )}
-      </div>
+      </Box>
     </>
   );
 };

@@ -1,4 +1,14 @@
+import CloseIcon from '@mui/icons-material/Close';
+import {
+  Box,
+  Button,
+  Drawer,
+  IconButton,
+  TextField,
+  Typography,
+} from '@mui/material';
 import React, { useState } from 'react';
+import { actionsStyle, contentStyle, drawerPaperStyle, headerStyle } from './InfoPuntoStyles';
 
 interface Punto {
   id: number;
@@ -12,10 +22,6 @@ interface InfoPuntoProps {
   onClose: () => void;
   onSave: (info: string) => void;
   onDelete: () => void;
-}
-
-interface Partida extends Punto {
-  // Puedes agregar campos adicionales si es necesario
 }
 
 const InfoPunto: React.FC<InfoPuntoProps> = ({ punto, onClose, onSave, onDelete }) => {
@@ -32,40 +38,66 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ punto, onClose, onSave, onDelete 
   };
 
   return (
-    <div className="info-punto-popup">
-      <div className="info-punto-content">
-        <button className="close-button" onClick={onClose}>x</button>
-        <div className='data-punto'>
-          <h2>Información del Punto</h2>
-          <p>ID: {punto.id}</p>
-          <p>Coordenadas: ({punto.x}, {punto.y})</p>
+    <Drawer
+      anchor="right"
+      open
+      onClose={onClose}
+      hideBackdrop
+      PaperProps={{
+        sx: drawerPaperStyle,
+      }}
+    >
+      {/* Encabezado con botón de cierre */}
+      <Box sx={headerStyle}>
+        <IconButton onClick={onClose}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
 
-          {editando ? (
-          <div>
-            <label>
-              Información:
-              <input
-                type="text"
-                value={info}
-                onChange={(e) => setInfo(e.target.value)}
-              />
-            </label>
-            <button onClick={handleSaveClick}>Guardar</button>
-          </div>
+      {/* Contenido principal */}
+      <Box sx={contentStyle}>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Información del Punto
+        </Typography>
+        <Typography variant="body1">ID: {punto.id}</Typography>
+        <Typography variant="body1">
+          Coordenadas: ({punto.x}, {punto.y})
+        </Typography>
+
+        {editando ? (
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Información"
+              variant="outlined"
+              value={info}
+              onChange={(e) => setInfo(e.target.value)}
+            />
+            <Button variant="contained" sx={{ mt: 2 }} onClick={handleSaveClick}>
+              Guardar
+            </Button>
+          </Box>
         ) : (
-          <p>Información: {punto.info}</p>
+          <Typography variant="body1" sx={{ mt: 2 }}>
+            Información: {punto.info}
+          </Typography>
         )}
-        {editando ? null : (
+      </Box>
+
+      {/* Pie con acciones */}
+      <Box sx={actionsStyle}>
+        {!editando && (
           <>
-            <button onClick={handleEditClick}>Editar Punto</button>
-            <button onClick={onDelete}>Eliminar Punto</button>
+            <Button variant="outlined" onClick={handleEditClick}>
+              Editar Punto
+            </Button>
+            <Button variant="outlined" color="error" onClick={onDelete}>
+              Eliminar Punto
+            </Button>
           </>
         )}
-        </div>
-        
-        
-      </div>
-    </div>
+      </Box>
+    </Drawer>
   );
 };
 

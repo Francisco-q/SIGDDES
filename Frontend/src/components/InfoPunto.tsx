@@ -14,6 +14,10 @@ interface InfoPuntoProps {
   onDelete: () => void;
 }
 
+interface Partida extends Punto {
+  // Puedes agregar campos adicionales si es necesario
+}
+
 const InfoPunto: React.FC<InfoPuntoProps> = ({ punto, onClose, onSave, onDelete }) => {
   const [editando, setEditando] = useState(false);
   const [info, setInfo] = useState(punto.info);

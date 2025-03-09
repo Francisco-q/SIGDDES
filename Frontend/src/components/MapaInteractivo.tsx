@@ -1,8 +1,8 @@
-import { Box, Button, ButtonGroup } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
+import { Box, Button, ButtonGroup, IconButton } from '@mui/material';
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import usePuntos from '../hooks/usePuntos';
-import Home from './Home';
 import InfoPunto from './InfoPunto';
 import {
   activarCreacionPartidas,
@@ -28,6 +28,7 @@ import {
 
 const MapaInteractivo: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
+  const navigate = useNavigate();
 
   if (!campus) {
     return <div>Error: Campus no definido</div>;
@@ -56,9 +57,18 @@ const MapaInteractivo: React.FC = () => {
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
   const [mostrandoInfo, setMostrandoInfo] = useState(false);
 
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
   return (
     <>
-      <Home />
+      <IconButton
+        onClick={handleGoHome}
+        sx={{ position: 'absolute', top: '10px', left: '10px', zIndex: 4 }}
+      >
+        <HomeIcon />
+      </IconButton>
       <Box sx={mapContainerStyle}>
         <Box sx={{ p: 2 }}>
           <Button
@@ -109,8 +119,6 @@ const MapaInteractivo: React.FC = () => {
           <Box
             component="svg"
             ref={svgRef}
-            width="1000"
-            height="800"
             onClick={crearPuntoActivo ? handleCrearPunto : handleCrearPartida}
             sx={{
               ...svgMapStyle,

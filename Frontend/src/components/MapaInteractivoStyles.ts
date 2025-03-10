@@ -35,7 +35,8 @@ export const zoomButtonsStyle: SxProps<Theme> = {
   display: 'flex',
   flexDirection: 'column',
   width: '50px',
-  p: '10px',
+  paddingTop: '10px',
+  paddingRight: '100px',
   backgroundColor: 'rgba(58,58,58,0.447)',
   borderRadius: '4px',
   zIndex: 3,
@@ -48,4 +49,11 @@ export const adminButtonsStyle: SxProps<Theme> = {
   display: 'flex',
   flexDirection: 'column',
   zIndex: 3,
+};
+
+export const homeButtonStyle: SxProps<Theme> = {
+  position: 'absolute',
+  top: '10px',
+  left: '10px',
+  zIndex: 4,
 };

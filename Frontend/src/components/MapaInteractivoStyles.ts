@@ -6,6 +6,7 @@ export const mapContainerStyle: SxProps<Theme> = {
   height: '100vh',
   overflow: 'hidden',
   zIndex: 1,
+  backgroundColor: 'gray',
 };
 
 export const svgContainerStyle: SxProps<Theme> = {
@@ -30,13 +31,10 @@ export const svgMapStyle: SxProps<Theme> = {
 
 export const zoomButtonsStyle: SxProps<Theme> = {
   position: 'absolute',
-  top: '10px',
-  right: '10px',
+  top: '90%',
+  left: '5%',
   display: 'flex',
   flexDirection: 'column',
-  width: '50px',
-  paddingTop: '10px',
-  paddingRight: '100px',
   backgroundColor: 'rgba(58,58,58,0.447)',
   borderRadius: '4px',
   zIndex: 3,
@@ -44,8 +42,8 @@ export const zoomButtonsStyle: SxProps<Theme> = {
 
 export const adminButtonsStyle: SxProps<Theme> = {
   position: 'absolute',
-  bottom: '10px',
-  left: '10px',
+  top: '10%',
+  left: '20%',
   display: 'flex',
   flexDirection: 'column',
   zIndex: 3,
@@ -56,4 +54,19 @@ export const homeButtonStyle: SxProps<Theme> = {
   top: '10px',
   left: '10px',
   zIndex: 4,
+};
+
+export const menuButtonStyle: SxProps<Theme> = {
+  position: 'absolute',
+  top: '10px',
+  right: '10px',
+  zIndex: 4,
+};
+
+export const modoButtonStyle: SxProps<Theme> = {
+  p: 2,
+  position: 'absolute', 
+  top: '80%', 
+  left: '80%', 
+  zIndex: 3 ,
 };

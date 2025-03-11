@@ -1,0 +1,85 @@
+# Requerimientos del Proyecto Django y Frontend
+
+## Requerimientos del Proyecto Django
+
+1. **Python**: Asegúrese de tener Python instalado en su sistema. Puede descargarlo desde [python.org](https://www.python.org/).
+
+2. **Django**: Instale Django utilizando pip:
+    ```bash
+    pip install django
+    ```
+
+3. **Django REST Framework**: Instale Django REST Framework:
+    ```bash
+    pip install djangorestframework
+    ```
+
+4. **django-cors-headers**: Instale django-cors-headers:
+    ```bash
+    pip install django-cors-headers
+    ```
+
+5. **drf-yasg**: Instale drf-yasg para la documentación de la API:
+    ```bash
+    pip install drf-yasg
+    ```
+
+6. **Configuración de la base de datos**: Asegúrese de que la configuración de la base de datos en `settings.py` esté correcta. Por defecto, se utiliza SQLite:
+    ```python
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    ```
+
+## Requerimientos del Proyecto Frontend
+
+1. **Node.js**: Asegúrese de tener Node.js instalado en su sistema. Puede descargarlo desde [nodejs.org](https://nodejs.org/).
+
+2. **Instalación de dependencias**: Navegue al directorio `Frontend` y ejecute el siguiente comando para instalar las dependencias del proyecto:
+    ```bash
+    npm install
+    ```
+
+3. **Configuración de TypeScript**: Asegúrese de que los archivos de configuración de TypeScript (`tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`) estén correctamente configurados.
+
+4. **Configuración de ESLint**: Asegúrese de que el archivo `eslint.config.js` esté correctamente configurado para mantener la calidad del código.
+
+## Otros Requisitos
+
+1. **Configuración de CORS**: Asegúrese de que `corsheaders` esté configurado en `settings.py` para permitir solicitudes desde el frontend:
+    ```python
+    INSTALLED_APPS = [
+        ...
+        'corsheaders',
+        ...
+    ]
+
+    MIDDLEWARE = [
+        ...
+        'corsheaders.middleware.CorsMiddleware',
+        ...
+    ]
+
+    CORS_ORIGIN_ALLOW_ALL = True  # O configure los orígenes permitidos
+    ```
+
+2. **Archivos Estáticos**: Asegúrese de que los archivos estáticos estén correctamente configurados en `settings.py`:
+    ```python
+    STATIC_URL = '/static/'
+    STATICFILES_DIRS = [BASE_DIR / "staticfiles"]
+    ```
+
+3. **Ejecutar el servidor Django**: Para iniciar el servidor Django, ejecute:
+    ```bash
+    python manage.py runserver
+    ```
+
+4. **Ejecutar el servidor Frontend**: Para iniciar el servidor de desarrollo del frontend, navegue al directorio `Frontend` y ejecute:
+    ```bash
+    npm start
+    ```
+
+Con estos pasos, debería tener su entorno de desarrollo configurado tanto para el backend de Django como para el frontend.

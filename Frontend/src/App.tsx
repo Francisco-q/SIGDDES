@@ -8,7 +8,7 @@ import MapaInteractivo from './components/MapaInteractivo';
 const App: React.FC = () => {
   return (
     <Router>
-      <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Container fixed>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/mapa/:campus" element={<MapaInteractivo />} />

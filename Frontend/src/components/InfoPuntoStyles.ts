@@ -3,7 +3,7 @@ import { SxProps, Theme } from '@mui/material';
 
 export const drawerPaperStyle: SxProps<Theme> = {
   width: { xs: '80vw', sm: 400 },
-  height: '100%',
+  height: '95%',
   backgroundColor: 'white',
   borderRadius: '8px 0 0 8px',
   boxShadow: '0 2px 8px rgba(0,0,0,0.15)',

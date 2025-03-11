@@ -1,5 +1,6 @@
 import HomeIcon from '@mui/icons-material/Home';
-import { Box, Button, ButtonGroup, IconButton } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { Box, Button, ButtonGroup, IconButton, Menu, MenuItem } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import usePuntos from '../hooks/usePuntos';
@@ -19,6 +20,7 @@ import {
   adminButtonsStyle,
   homeButtonStyle,
   mapContainerStyle,
+  menuButtonStyle,
   svgContainerStyle,
   svgMapStyle,
   zoomButtonsStyle,
@@ -52,17 +54,26 @@ const MapaInteractivo: React.FC = () => {
   const [dragging, setDragging] = useState(false);
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
   const [mostrandoInfo, setMostrandoInfo] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleGoHome = () => {
     navigate('/');
   };
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
   // Encontrar el último punto QR en la lista de puntos
   const ultimoPuntoQR = puntos.length > 0 ? puntos[puntos.length - 1] : null;
 
-  // Estado inicial del transform con un zoom alto centrado en el último punto QR
+  // Estado inicial del transform sin zoom
   const initialTransform = {
-    scale: 2, // Ajusta este valor para el nivel de zoom inicial deseado
+    scale: 1, // Nivel de zoom inicial sin zoom
     translateX: 0,
     translateY: 0,
   };
@@ -72,13 +83,15 @@ const MapaInteractivo: React.FC = () => {
   useEffect(() => {
     if (ultimoPuntoQR) {
       const zoom = 2;
-      const translateX = -ultimoPuntoQR.x * zoom + window.innerWidth;
-      const translateY = -ultimoPuntoQR.y * zoom + window.innerHeight;
+      const translateX = -ultimoPuntoQR.x * zoom + window.innerWidth / 2;
+      const translateY = -ultimoPuntoQR.y * zoom + window.innerHeight / 2;
       setTransform({
         scale: zoom,
         translateX: translateX,
         translateY: translateY,
       });
+    } else {
+      setTransform(initialTransform);
     }
   }, [ultimoPuntoQR]);
 
@@ -111,17 +124,28 @@ const MapaInteractivo: React.FC = () => {
       >
         <HomeIcon />
       </IconButton>
-      <Box sx={{ p: 2, position: 'absolute', top: '10px', left: '90%', transform: 'translateX(-90%)', zIndex: 3 }}>
-        <Button
-          onClick={() => setModoAdmin(!modoAdmin)}
-          variant="contained"
-          sx={{ mb: 2 }}
-        >
-          {modoAdmin ? 'Cambiar a Modo Usuario' : 'Cambiar a Modo Admin'}
-        </Button>
-
+      <IconButton
+        onClick={handleMenuOpen}
+        sx={menuButtonStyle}
+      >
+        <MenuIcon />
+      </IconButton>
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem>
+          <Button
+            onClick={() => setModoAdmin(!modoAdmin)}
+            variant="contained"
+            sx={{ mb: 2 }}
+          >
+            {modoAdmin ? 'Cambiar a Modo Usuario' : 'Cambiar a Modo Admin'}
+          </Button>
+        </MenuItem>
         {modoAdmin && (
-          <Box sx={adminButtonsStyle}>
+          <MenuItem>
             <ButtonGroup variant="contained" sx={{ mb: 2 }}>
               <Button
                 onClick={() =>
@@ -138,9 +162,9 @@ const MapaInteractivo: React.FC = () => {
                 Activar Creación de Puntos de Partida
               </Button>
             </ButtonGroup>
-          </Box>
+          </MenuItem>
         )}
-      </Box>
+      </Menu>
 
       <Box sx={zoomButtonsStyle}>
         <ButtonGroup variant="contained">

@@ -17,6 +17,7 @@ export const svgContainerStyle: SxProps<Theme> = {
   alignItems: 'center',
   overflow: 'hidden',
   position: 'relative',
+  backgroundColor: 'green',
   zIndex: 2,
 };
 
@@ -24,11 +25,17 @@ export const svgMapStyle: SxProps<Theme> = {
   cursor: 'grab',
   width: '100%',
   height: '100%',
+  overflow: 'hidden',
+  backgroundColor: 'white',
   '&:active': {
     cursor: 'grabbing',
   },
 };
 
+export const mapImageStyle: SxProps<Theme> = {
+  width:"100%",
+  height:"100%",
+};
 export const zoomButtonsStyle: SxProps<Theme> = {
   position: 'absolute',
   top: '90%',

@@ -24,6 +24,7 @@ import {
   svgContainerStyle,
   svgMapStyle,
   zoomButtonsStyle,
+  mapImageStyle,
 } from './MapaInteractivoStyles';
 
 const MapaInteractivo: React.FC = () => {
@@ -189,7 +190,7 @@ const MapaInteractivo: React.FC = () => {
             transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
           }}
         >
-          <image href={getMapaSrc(campus)} width="1000" height="800" preserveAspectRatio="xMidYMid meet" />
+          <Box component="image" href={getMapaSrc(campus)} sx={mapImageStyle} />
           {puntos.map((punto) => (
             <circle
               key={punto.id}

@@ -1,14 +1,13 @@
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Box, Button, ButtonGroup, IconButton, Menu, MenuItem } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import usePuntos from '../hooks/usePuntos';
 import InfoPunto from './InfoPunto';
 import {
   activarCreacionPartidas,
   activarCreacionPuntos,
-  getMapaSrc,
   handleClickPuntoLocal,
   handleCloseInfo,
   handleDeletePunto,
@@ -17,19 +16,20 @@ import {
   handleZoomOut,
 } from './mapaHelpers';
 import {
-  adminButtonsStyle,
   homeButtonStyle,
   mapContainerStyle,
+  mapImageStyle,
   menuButtonStyle,
   svgContainerStyle,
   svgMapStyle,
   zoomButtonsStyle,
-  mapImageStyle,
 } from './MapaInteractivoStyles';
+import MapComponent from './MapComponent';
 
 const MapaInteractivo: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
   const navigate = useNavigate();
+  const svgRef = useRef<SVGSVGElement>(null);
 
   if (!campus) {
     return <div>Error: Campus no definido</div>;
@@ -49,7 +49,6 @@ const MapaInteractivo: React.FC = () => {
     crearPuntoActivo,
     setCrearPuntoActivo,
     setCrearPartidaActivo,
-    svgRef,
   } = usePuntos(campus);
 
   const [dragging, setDragging] = useState(false);
@@ -117,6 +116,10 @@ const MapaInteractivo: React.FC = () => {
     setDragging(false);
   };
 
+  const getMapaSrc = (campus: string) => {
+    return `/mapas/${campus}.svg`;
+  };
+
   return (
     <Box sx={mapContainerStyle}>
       <IconButton
@@ -180,6 +183,7 @@ const MapaInteractivo: React.FC = () => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       >
+        <MapComponent />
         <Box
           component="svg"
           ref={svgRef}
@@ -188,6 +192,10 @@ const MapaInteractivo: React.FC = () => {
             ...svgMapStyle,
             cursor: modoAdmin ? 'pointer' : 'default',
             transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 2, // Asegura que el SVG esté al frente
           }}
         >
           <Box component="image" href={getMapaSrc(campus)} sx={mapImageStyle} />

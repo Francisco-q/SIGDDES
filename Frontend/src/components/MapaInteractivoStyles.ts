@@ -1,79 +1,58 @@
-import { SxProps, Theme } from '@mui/material';
+import { CSSProperties } from 'react';
 
-export const mapContainerStyle: SxProps<Theme> = {
+export const mapContainerStyle: CSSProperties = {
+  width: '100%',
+  height: '800px',
   position: 'relative',
-  width: '100vw',
-  height: '100vh',
   overflow: 'hidden',
-  zIndex: 1,
-  backgroundColor: 'gray',
 };
 
-export const svgContainerStyle: SxProps<Theme> = {
+export const svgContainerStyle: CSSProperties = {
   width: '100%',
   height: '100%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  overflow: 'hidden',
-  position: 'relative',
-  backgroundColor: 'green',
-  zIndex: 2,
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  zIndex: 1, // Asegura que el contenedor SVG esté sobre el mapa
 };
 
-export const svgMapStyle: SxProps<Theme> = {
-  cursor: 'grab',
+export const svgMapStyle: CSSProperties = {
   width: '100%',
   height: '100%',
-  overflow: 'hidden',
-  backgroundColor: 'white',
-  '&:active': {
-    cursor: 'grabbing',
-  },
-};
-
-export const mapImageStyle: SxProps<Theme> = {
-  width:"100%",
-  height:"100%",
-};
-export const zoomButtonsStyle: SxProps<Theme> = {
   position: 'absolute',
-  top: '90%',
-  left: '5%',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: 'rgba(58,58,58,0.447)',
-  borderRadius: '4px',
-  zIndex: 3,
+  top: 0,
+  left: 0,
 };
 
-export const adminButtonsStyle: SxProps<Theme> = {
-  position: 'absolute',
-  top: '10%',
-  left: '20%',
-  display: 'flex',
-  flexDirection: 'column',
-  zIndex: 3,
+export const mapImageStyle: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
 };
 
-export const homeButtonStyle: SxProps<Theme> = {
+export const homeButtonStyle: CSSProperties = {
   position: 'absolute',
   top: '10px',
   left: '10px',
-  zIndex: 4,
+  zIndex: 3,
 };
 
-export const menuButtonStyle: SxProps<Theme> = {
+export const menuButtonStyle: CSSProperties = {
   position: 'absolute',
   top: '10px',
   right: '10px',
-  zIndex: 4,
+  zIndex: 3,
 };
 
-export const modoButtonStyle: SxProps<Theme> = {
-  p: 2,
-  position: 'absolute', 
-  top: '80%', 
-  left: '80%', 
-  zIndex: 3 ,
+export const adminButtonsStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+};
+
+export const zoomButtonsStyle: CSSProperties = {
+  position: 'absolute',
+  bottom: '20px',
+  right: '20px',
+  zIndex: 3,
 };

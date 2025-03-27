@@ -12,8 +12,7 @@ export const svgContainerStyle: CSSProperties = {
   height: '100%',
   position: 'absolute',
   top: 0,
-  left: 0,
-  zIndex: 1, // Asegura que el contenedor SVG esté sobre el mapa
+  left: 0,// Asegura que el contenedor SVG esté sobre el mapa
 };
 
 export const svgMapStyle: CSSProperties = {
@@ -34,14 +33,12 @@ export const homeButtonStyle: CSSProperties = {
   position: 'absolute',
   top: '10px',
   left: '10px',
-  zIndex: 3,
 };
 
 export const menuButtonStyle: CSSProperties = {
   position: 'absolute',
   top: '10px',
   right: '10px',
-  zIndex: 3,
 };
 
 export const adminButtonsStyle: CSSProperties = {
@@ -54,5 +51,4 @@ export const zoomButtonsStyle: CSSProperties = {
   position: 'absolute',
   bottom: '20px',
   right: '20px',
-  zIndex: 3,
 };

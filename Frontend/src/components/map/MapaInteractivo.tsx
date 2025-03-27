@@ -3,8 +3,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { Box, Button, ButtonGroup, IconButton, Menu, MenuItem } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import usePuntos from '../hooks/usePuntos';
-import InfoPunto from './InfoPunto';
+import usePuntos from '../../hooks/usePuntos';
+import InfoPunto from '../info_punto/InfoPunto'; // Ruta correcta
+import MapComponent from '../open_map/MapComponent';
 import {
   activarCreacionPartidas,
   activarCreacionPuntos,
@@ -24,7 +25,6 @@ import {
   svgMapStyle,
   zoomButtonsStyle,
 } from './MapaInteractivoStyles';
-import MapComponent from './MapComponent';
 
 const MapaInteractivo: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();

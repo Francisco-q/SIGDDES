@@ -1,7 +1,7 @@
 // filepath: /c:/Users/Francisco/Documents/SIGDDES/Frontend/src/components/AdminCrud.tsx
 import React, { useEffect, useState } from 'react';
-import axiosInstance from '../api/axiosConfig';
-import { Punto } from './MapaInteractivo'; // Asegúrate de exportar la interfaz Punto desde MapaInteractivo
+import axiosInstance from '../../api/axiosConfig';
+import { Punto } from '../map/MapaInteractivo'; // Asegúrate de exportar la interfaz Punto desde MapaInteractivo
 import '/src/styles/AdminCrud.css'; // Importa estilos para el componente
 
 const AdminCrud: React.FC = () => {

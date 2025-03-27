@@ -22,7 +22,7 @@ const MapComponent: React.FC = () => {
   };
 
   return (
-    <MapContainer style={{ height: '100vh', width: '100%' }}>
+    <MapContainer style={{ height: '100vh', width: '100%' }} center={center} zoom={zoom}>
       <SetView center={center} zoom={zoom} />
       <AttributionControl />
       <TileLayer

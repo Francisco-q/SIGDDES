@@ -18,6 +18,7 @@ interface Punto {
 }
 
 interface InfoPuntoProps {
+  id?: string;
   punto: Punto;
   onClose: () => void;
   onSave: (info: string) => void;

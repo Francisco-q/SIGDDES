@@ -4,8 +4,8 @@ import { Box, Button, ButtonGroup, IconButton, Menu, MenuItem } from '@mui/mater
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import usePuntos from '../../hooks/usePuntos';
-import InfoPunto from '../info_punto/InfoPunto'; // Ruta correcta
-import MapComponent from '../open_map/MapComponent';
+import InfoPunto from '../info_punto/InfoPunto';
+import MapComponent from '../open_map/OpenMap';
 import {
   activarCreacionPartidas,
   activarCreacionPuntos,
@@ -31,10 +31,6 @@ const MapaInteractivo: React.FC = () => {
   const navigate = useNavigate();
   const svgRef = useRef<SVGSVGElement>(null);
 
-  if (!campus) {
-    return <div>Error: Campus no definido</div>;
-  }
-
   const {
     puntos,
     partidas,
@@ -49,7 +45,7 @@ const MapaInteractivo: React.FC = () => {
     crearPuntoActivo,
     setCrearPuntoActivo,
     setCrearPartidaActivo,
-  } = usePuntos(campus);
+  } = usePuntos(campus || '');
 
   const [dragging, setDragging] = useState(false);
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
@@ -68,12 +64,10 @@ const MapaInteractivo: React.FC = () => {
     setMenuAnchorEl(null);
   };
 
-  // Encontrar el último punto QR en la lista de puntos
   const ultimoPuntoQR = puntos.length > 0 ? puntos[puntos.length - 1] : null;
 
-  // Estado inicial del transform sin zoom
   const initialTransform = {
-    scale: 1, // Nivel de zoom inicial sin zoom
+    scale: 1,
     translateX: 0,
     translateY: 0,
   };
@@ -117,30 +111,38 @@ const MapaInteractivo: React.FC = () => {
   };
 
   const getMapaSrc = (campus: string) => {
-    return `/mapas/${campus}.svg`;
+    return `/assets/${campus}.svg`; // Corregido: devolvemos la ruta directamente
   };
 
+  if (!campus) {
+    return <div id="mapa-interactivo-error">Error: Campus no definido</div>;
+  }
+
   return (
-    <Box sx={mapContainerStyle}>
+    <Box id={`mapa-interactivo-container-${campus}`} sx={mapContainerStyle}>
       <IconButton
+        id={`mapa-interactivo-home-button-${campus}`}
         onClick={handleGoHome}
         sx={homeButtonStyle}
       >
         <HomeIcon />
       </IconButton>
       <IconButton
+        id={`mapa-interactivo-menu-button-${campus}`}
         onClick={handleMenuOpen}
         sx={menuButtonStyle}
       >
         <MenuIcon />
       </IconButton>
       <Menu
+        id={`mapa-interactivo-menu-${campus}`}
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem>
+        <MenuItem id={`mapa-interactivo-menu-item-toggle-admin-${campus}`}>
           <Button
+            id={`mapa-interactivo-toggle-admin-button-${campus}`}
             onClick={() => setModoAdmin(!modoAdmin)}
             variant="contained"
             sx={{ mb: 2 }}
@@ -149,9 +151,14 @@ const MapaInteractivo: React.FC = () => {
           </Button>
         </MenuItem>
         {modoAdmin && (
-          <MenuItem>
-            <ButtonGroup variant="contained" sx={{ mb: 2 }}>
+          <MenuItem id={`mapa-interactivo-menu-item-admin-actions-${campus}`}>
+            <ButtonGroup
+              id={`mapa-interactivo-admin-button-group-${campus}`}
+              variant="contained"
+              sx={{ mb: 2 }}
+            >
               <Button
+                id={`mapa-interactivo-create-points-button-${campus}`}
                 onClick={() =>
                   activarCreacionPuntos(setTransform, setCrearPuntoActivo, setCrearPartidaActivo)
                 }
@@ -159,6 +166,7 @@ const MapaInteractivo: React.FC = () => {
                 Activar Creación de Puntos
               </Button>
               <Button
+                id={`mapa-interactivo-create-starting-points-button-${campus}`}
                 onClick={() =>
                   activarCreacionPartidas(setTransform, setCrearPartidaActivo, setCrearPuntoActivo)
                 }
@@ -170,14 +178,25 @@ const MapaInteractivo: React.FC = () => {
         )}
       </Menu>
 
-      <Box sx={zoomButtonsStyle}>
-        <ButtonGroup variant="contained">
-          <Button onClick={() => handleZoomIn(transform, setTransform)}>+</Button>
-          <Button onClick={() => handleZoomOut(transform, setTransform)}>-</Button>
+      <Box id={`mapa-interactivo-zoom-buttons-${campus}`} sx={zoomButtonsStyle}>
+        <ButtonGroup id={`mapa-interactivo-zoom-button-group-${campus}`} variant="contained">
+          <Button
+            id={`mapa-interactivo-zoom-in-button-${campus}`}
+            onClick={() => handleZoomIn(transform, setTransform)}
+          >
+            +
+          </Button>
+          <Button
+            id={`mapa-interactivo-zoom-out-button-${campus}`}
+            onClick={() => handleZoomOut(transform, setTransform)}
+          >
+            -
+          </Button>
         </ButtonGroup>
       </Box>
 
       <Box
+        id={`mapa-interactivo-svg-container-${campus}`}
         sx={svgContainerStyle}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -185,6 +204,7 @@ const MapaInteractivo: React.FC = () => {
       >
         <MapComponent />
         <Box
+          id={`mapa-interactivo-svg-${campus}`}
           component="svg"
           ref={svgRef}
           onClick={crearPuntoActivo ? handleCrearPunto : handleCrearPartida}
@@ -195,12 +215,20 @@ const MapaInteractivo: React.FC = () => {
             position: 'absolute',
             top: 0,
             left: 0,
-            zIndex: 2, // Asegura que el SVG esté al frente
+            zIndex: 2,
           }}
         >
-          <Box component="image" href={getMapaSrc(campus)} sx={mapImageStyle} />
+          <Box
+            id={`mapa-interactivo-map-image-${campus}`}
+            component="image"
+            href={getMapaSrc(campus)}
+            sx={mapImageStyle}
+            onLoad={() => console.log('Mapa cargado correctamente')}
+            onError={() => console.error('Error al cargar el mapa')}
+          />
           {puntos.map((punto) => (
             <circle
+              id={`mapa-interactivo-punto-${punto.id}`}
               key={punto.id}
               cx={punto.x}
               cy={punto.y}
@@ -214,6 +242,7 @@ const MapaInteractivo: React.FC = () => {
           ))}
           {partidas.map((partida) => (
             <circle
+              id={`mapa-interactivo-partida-${partida.id}`}
               key={partida.id}
               cx={partida.x}
               cy={partida.y}
@@ -230,6 +259,7 @@ const MapaInteractivo: React.FC = () => {
 
       {mostrandoInfo && puntoSeleccionado && (
         <InfoPunto
+          id={`mapa-interactivo-info-punto-${puntoSeleccionado.id}`}
           punto={puntoSeleccionado}
           onClose={() => handleCloseInfo(setMostrandoInfo)}
           onSave={(info: string) =>

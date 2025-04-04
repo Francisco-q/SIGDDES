@@ -1,12 +1,16 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from tasks.views import TaskViewSet, home
+from tasks.views import SafeSpaceViewSet, StartingPointViewSet, PathViewSet, ImageUploadViewSet, home
 
 router = DefaultRouter()
-router.register(r'tasks', TaskViewSet)
+router.register(r'puntos', SafeSpaceViewSet)
+router.register(r'partidas', StartingPointViewSet)
+router.register(r'caminos', PathViewSet)
+router.register(r'puntos', PointViewSet, basename='puntos')
+router.register(r'caminos', PathViewSet, basename='caminos')
+router.register(r'upload', ImageUploadViewSet, basename='upload')  # Registrar el ViewSet para subir imágenes
 
 urlpatterns = [
     path('', home),
-    path('api/', include(router.urls)),
+    path('/api', include(router.urls)),
 ]
-#esto genera las rutas para el api rest de la app tasks get, post, put, delete

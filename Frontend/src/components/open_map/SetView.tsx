@@ -1,18 +1,17 @@
-import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 
 interface SetViewProps {
-  center: [number, number];
-  zoom: number;
+  bounds: [[number, number], [number, number]];
+  zoom?: number; // Zoom opcional
 }
 
-const SetView: React.FC<SetViewProps> = ({ center, zoom }) => {
+const SetView: React.FC<SetViewProps> = ({ bounds, zoom = 18 }) => {
   const map = useMap();
-
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-
+  map.setView(
+    [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2], // Centro de los bounds
+    zoom // Zoom explícito
+  );
+  map.setMaxBounds(bounds); // Restringe el desplazamiento a los límites del SVG
   return null;
 };
 

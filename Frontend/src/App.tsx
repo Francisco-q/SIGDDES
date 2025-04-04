@@ -3,7 +3,7 @@ import React from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import AdminCrud from './components/admin/AdminCrud';
 import Home from './components/Home';
-import MapaInteractivo from './components/map/MapaInteractivo';
+import MapComponent from './components/open_map/OpenMap';
 
 const App: React.FC = () => {
   return (
@@ -11,7 +11,7 @@ const App: React.FC = () => {
       <Container fixed>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/mapa/:campus" element={<MapaInteractivo />} />
+          <Route path="/mapa2/:campus" element={<MapComponent />} />
           <Route path="/admin" element={<AdminCrud />} />
         </Routes>
       </Container>

@@ -5,8 +5,9 @@ import { useNavigate } from 'react-router-dom';
 const Home: React.FC = () => {
   const navigate = useNavigate();
 
+  // Actualizamos la ruta para que apunte a OpenMap
   const handleSelectCampus = (campus: string) => {
-    navigate(`/mapa/${campus}`);
+    navigate(`/mapa2/${campus}`); // Cambiamos la ruta a /mapa2
   };
 
   return (

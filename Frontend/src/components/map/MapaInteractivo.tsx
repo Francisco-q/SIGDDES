@@ -1,60 +1,65 @@
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Box, Button, ButtonGroup, IconButton, Menu, MenuItem } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react';
+import { Box, IconButton, Menu, MenuItem } from '@mui/material';
+import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useState } from 'react';
+import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
-import usePuntos from '../../hooks/usePuntos';
-import InfoPunto from '../info_punto/InfoPunto';
-import MapComponent from '../open_map/OpenMap';
-import {
-  activarCreacionPartidas,
-  activarCreacionPuntos,
-  handleClickPuntoLocal,
-  handleCloseInfo,
-  handleDeletePunto,
-  handleSaveEdit,
-  handleZoomIn,
-  handleZoomOut,
-} from './mapaHelpers';
-import {
-  homeButtonStyle,
-  mapContainerStyle,
-  mapImageStyle,
-  menuButtonStyle,
-  svgContainerStyle,
-  svgMapStyle,
-  zoomButtonsStyle,
-} from './MapaInteractivoStyles';
+import SetView from './SetView';
 
-const MapaInteractivo: React.FC = () => {
+interface TotemQR {
+  id: number;
+  latitude: number;
+  longitude: number;
+  name: string;
+}
+
+interface ReceptionQR {
+  id: number;
+  latitude: number;
+  longitude: number;
+  name: string;
+}
+
+interface PathPoint {
+  latitude: number;
+  longitude: number;
+  order: number;
+}
+
+interface Path {
+  id: number;
+  name: string;
+  points: PathPoint[];
+}
+
+const OpenMap: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
   const navigate = useNavigate();
-  const svgRef = useRef<SVGSVGElement>(null);
 
-  const {
-    puntos,
-    partidas,
-    puntoSeleccionado,
-    setPuntoSeleccionado,
-    handleCrearPunto,
-    handleCrearPartida,
-    handleEditarPunto,
-    handleEliminarPunto,
-    modoAdmin,
-    setModoAdmin,
-    crearPuntoActivo,
-    setCrearPuntoActivo,
-    setCrearPartidaActivo,
-  } = usePuntos(campus || '');
+  const svgBounds: [[number, number], [number, number]] = [
+    [51.505, -0.09], // Esquina superior izquierda
+    [51.51, -0.1],   // Esquina inferior derecha
+  ];
 
-  const [dragging, setDragging] = useState(false);
-  const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
-  const [mostrandoInfo, setMostrandoInfo] = useState(false);
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleGoHome = () => {
-    navigate('/');
+  const getMapaSrc = (campus: string | undefined) => {
+    if (!campus) return '';
+    return `/assets/${campus}.svg`;
   };
+
+  // Estado para puntos QR, recepciones y caminos
+  const [totems, setTotems] = useState<TotemQR[]>([]);
+  const [receptions, setReceptions] = useState<ReceptionQR[]>([]);
+  const [selectedPath, setSelectedPath] = useState<Path | null>(null);
+
+  // Estado para crear caminos, puntos QR y recepciones QR
+  const [isCreatingPath, setIsCreatingPath] = useState(false);
+  const [isCreatingTotem, setIsCreatingTotem] = useState(false);
+  const [isCreatingReception, setIsCreatingReception] = useState(false);
+  const [currentPathPoints, setCurrentPathPoints] = useState<[number, number][]>([]);
+
+  // Estado para el menú
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setMenuAnchorEl(event.currentTarget);
@@ -64,212 +69,206 @@ const MapaInteractivo: React.FC = () => {
     setMenuAnchorEl(null);
   };
 
-  const ultimoPuntoQR = puntos.length > 0 ? puntos[puntos.length - 1] : null;
-
-  const initialTransform = {
-    scale: 1,
-    translateX: 0,
-    translateY: 0,
+  const handleGoHome = () => {
+    navigate('/');
   };
 
-  const [transform, setTransform] = useState(initialTransform);
-
+  // Cargar puntos QR y recepciones desde el backend
   useEffect(() => {
-    if (ultimoPuntoQR) {
-      const zoom = 2;
-      const translateX = -ultimoPuntoQR.x * zoom + window.innerWidth / 2;
-      const translateY = -ultimoPuntoQR.y * zoom + window.innerHeight / 2;
-      setTransform({
-        scale: zoom,
-        translateX: translateX,
-        translateY: translateY,
+    fetch('http://localhost:8000/api/totems/')
+      .then(res => {
+        if (!res.ok) throw new Error('Error al obtener totems');
+        return res.json();
+      })
+      .then((data: TotemQR[]) => setTotems(data))
+      .catch(error => console.error('Error fetching totems:', error));
+
+    fetch('http://localhost:8000/api/recepciones/')
+      .then(res => {
+        if (!res.ok) throw new Error('Error al obtener recepciones');
+        return res.json();
+      })
+      .then((data: ReceptionQR[]) => setReceptions(data))
+      .catch(error => console.error('Error fetching receptions:', error));
+  }, []);
+
+  // Manejar clics en el mapa para agregar puntos
+  const MapClickHandler: React.FC = () => {
+    useMapEvents({
+      click(e) {
+        const { lat, lng } = e.latlng;
+
+        if (isCreatingPath) {
+          // Agregar puntos al camino actual
+          setCurrentPathPoints([...currentPathPoints, [lat, lng]]);
+        } else if (isCreatingTotem) {
+          // Crear un nuevo punto QR
+          const newTotem: Omit<TotemQR, 'id'> = {
+            latitude: lat,
+            longitude: lng,
+            name: 'Nuevo Totem QR',
+          };
+          saveTotem(newTotem);
+        } else if (isCreatingReception) {
+          // Crear una nueva recepción QR
+          const newReception: Omit<ReceptionQR, 'id'> = {
+            latitude: lat,
+            longitude: lng,
+            name: 'Nueva Recepción QR',
+          };
+          saveReception(newReception);
+        }
+      },
+    });
+    return null;
+  };
+
+  // Guardar un nuevo punto QR en el backend
+  const saveTotem = async (totem: Omit<TotemQR, 'id'>) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/totems/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(totem),
       });
-    } else {
-      setTransform(initialTransform);
+      if (!response.ok) throw new Error('Error al guardar el totem');
+      const savedTotem: TotemQR = await response.json();
+      setTotems([...totems, savedTotem]);
+      setIsCreatingTotem(false); // Salir del modo de creación
+    } catch (error) {
+      console.error('Error:', error);
     }
-  }, [ultimoPuntoQR]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setDragging(true);
-    setStartCoords({ x: e.clientX, y: e.clientY });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!dragging) return;
-    const dx = e.clientX - startCoords.x;
-    const dy = e.clientY - startCoords.y;
-    setStartCoords({ x: e.clientX, y: e.clientY });
-    setTransform((prev) => ({
-      ...prev,
-      translateX: prev.translateX + dx,
-      translateY: prev.translateY + dy,
-    }));
+  // Guardar una nueva recepción QR en el backend
+  const saveReception = async (reception: Omit<ReceptionQR, 'id'>) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/recepciones/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reception),
+      });
+      if (!response.ok) throw new Error('Error al guardar la recepción');
+      const savedReception: ReceptionQR = await response.json();
+      setReceptions([...receptions, savedReception]);
+      setIsCreatingReception(false); // Salir del modo de creación
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
-  const handleMouseUp = () => {
-    setDragging(false);
+  // Guardar el camino en el backend
+  const savePath = async () => {
+    const pathData = {
+      name: 'Nuevo camino',
+      points: currentPathPoints.map((point, index) => ({
+        latitude: point[0],
+        longitude: point[1],
+        order: index + 1,
+      })),
+    };
+    try {
+      const response = await fetch('http://localhost:8000/api/caminos/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pathData),
+      });
+      if (!response.ok) throw new Error('Error al guardar el camino');
+      setCurrentPathPoints([]); // Reinicia los puntos
+      setIsCreatingPath(false); // Sale del modo de creación
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
-
-  const getMapaSrc = (campus: string) => {
-    return `/assets/${campus}.svg`; // Corregido: devolvemos la ruta directamente
-  };
-
-  if (!campus) {
-    return <div id="mapa-interactivo-error">Error: Campus no definido</div>;
-  }
 
   return (
-    <Box id={`mapa-interactivo-container-${campus}`} sx={mapContainerStyle}>
+    <Box>
+      {/* Botón Home */}
       <IconButton
-        id={`mapa-interactivo-home-button-${campus}`}
         onClick={handleGoHome}
-        sx={homeButtonStyle}
+        sx={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          zIndex: 1000,
+          backgroundColor: 'white',
+        }}
       >
         <HomeIcon />
       </IconButton>
+
+      {/* Botón para abrir el menú */}
       <IconButton
-        id={`mapa-interactivo-menu-button-${campus}`}
         onClick={handleMenuOpen}
-        sx={menuButtonStyle}
+        sx={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+          backgroundColor: 'white',
+        }}
       >
         <MenuIcon />
       </IconButton>
+
+      {/* Menú desplegable */}
       <Menu
-        id={`mapa-interactivo-menu-${campus}`}
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem id={`mapa-interactivo-menu-item-toggle-admin-${campus}`}>
-          <Button
-            id={`mapa-interactivo-toggle-admin-button-${campus}`}
-            onClick={() => setModoAdmin(!modoAdmin)}
-            variant="contained"
-            sx={{ mb: 2 }}
-          >
-            {modoAdmin ? 'Cambiar a Modo Usuario' : 'Cambiar a Modo Admin'}
-          </Button>
+        <MenuItem onClick={() => { setIsCreatingPath(!isCreatingPath); handleMenuClose(); }}>
+          {isCreatingPath ? 'Cancelar Crear Camino' : 'Crear Camino'}
         </MenuItem>
-        {modoAdmin && (
-          <MenuItem id={`mapa-interactivo-menu-item-admin-actions-${campus}`}>
-            <ButtonGroup
-              id={`mapa-interactivo-admin-button-group-${campus}`}
-              variant="contained"
-              sx={{ mb: 2 }}
-            >
-              <Button
-                id={`mapa-interactivo-create-points-button-${campus}`}
-                onClick={() =>
-                  activarCreacionPuntos(setTransform, setCrearPuntoActivo, setCrearPartidaActivo)
-                }
-              >
-                Activar Creación de Puntos
-              </Button>
-              <Button
-                id={`mapa-interactivo-create-starting-points-button-${campus}`}
-                onClick={() =>
-                  activarCreacionPartidas(setTransform, setCrearPartidaActivo, setCrearPuntoActivo)
-                }
-              >
-                Activar Creación de Puntos de Partida
-              </Button>
-            </ButtonGroup>
-          </MenuItem>
-        )}
+        <MenuItem onClick={() => { setIsCreatingTotem(!isCreatingTotem); handleMenuClose(); }}>
+          {isCreatingTotem ? 'Cancelar Crear Punto QR' : 'Crear Punto QR'}
+        </MenuItem>
+        <MenuItem onClick={() => { setIsCreatingReception(!isCreatingReception); handleMenuClose(); }}>
+          {isCreatingReception ? 'Cancelar Crear Recepción QR' : 'Crear Recepción QR'}
+        </MenuItem>
       </Menu>
 
-      <Box id={`mapa-interactivo-zoom-buttons-${campus}`} sx={zoomButtonsStyle}>
-        <ButtonGroup id={`mapa-interactivo-zoom-button-group-${campus}`} variant="contained">
-          <Button
-            id={`mapa-interactivo-zoom-in-button-${campus}`}
-            onClick={() => handleZoomIn(transform, setTransform)}
-          >
-            +
-          </Button>
-          <Button
-            id={`mapa-interactivo-zoom-out-button-${campus}`}
-            onClick={() => handleZoomOut(transform, setTransform)}
-          >
-            -
-          </Button>
-        </ButtonGroup>
-      </Box>
-
-      <Box
-        id={`mapa-interactivo-svg-container-${campus}`}
-        sx={svgContainerStyle}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      >
-        <MapComponent />
-        <Box
-          id={`mapa-interactivo-svg-${campus}`}
-          component="svg"
-          ref={svgRef}
-          onClick={crearPuntoActivo ? handleCrearPunto : handleCrearPartida}
-          sx={{
-            ...svgMapStyle,
-            cursor: modoAdmin ? 'pointer' : 'default',
-            transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            zIndex: 2,
-          }}
-        >
-          <Box
-            id={`mapa-interactivo-map-image-${campus}`}
-            component="image"
-            href={getMapaSrc(campus)}
-            sx={mapImageStyle}
-            onLoad={() => console.log('Mapa cargado correctamente')}
-            onError={() => console.error('Error al cargar el mapa')}
-          />
-          {puntos.map((punto) => (
-            <circle
-              id={`mapa-interactivo-punto-${punto.id}`}
-              key={punto.id}
-              cx={punto.x}
-              cy={punto.y}
-              r="10"
-              fill="red"
-              onClick={(e) =>
-                handleClickPuntoLocal(punto, e, setPuntoSeleccionado, setMostrandoInfo)
-              }
-              style={{ cursor: 'pointer' }}
-            />
-          ))}
-          {partidas.map((partida) => (
-            <circle
-              id={`mapa-interactivo-partida-${partida.id}`}
-              key={partida.id}
-              cx={partida.x}
-              cy={partida.y}
-              r="10"
-              fill="blue"
-              onClick={(e) =>
-                handleClickPuntoLocal(partida, e, setPuntoSeleccionado, setMostrandoInfo)
-              }
-              style={{ cursor: 'pointer' }}
-            />
-          ))}
-        </Box>
-      </Box>
-
-      {mostrandoInfo && puntoSeleccionado && (
-        <InfoPunto
-          id={`mapa-interactivo-info-punto-${puntoSeleccionado.id}`}
-          punto={puntoSeleccionado}
-          onClose={() => handleCloseInfo(setMostrandoInfo)}
-          onSave={(info: string) =>
-            handleSaveEdit(handleEditarPunto, setMostrandoInfo, info)
-          }
-          onDelete={() => handleDeletePunto(handleEliminarPunto, setMostrandoInfo)}
+      <MapContainer style={{ height: '100vh', width: '100%' }}>
+        <SetView bounds={svgBounds} />
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          opacity={0.1} // Reduce la opacidad del mapa base
         />
-      )}
+        {campus && (
+          <ImageOverlay
+            url={getMapaSrc(campus)}
+            bounds={svgBounds}
+            opacity={1}
+            eventHandlers={{
+              error: () => console.error('Error al cargar el archivo SVG'),
+            }}
+          />
+        )}
+        <MapClickHandler />
+        {/* Renderizar puntos QR */}
+        {totems.map(totem => (
+          <Marker key={totem.id} position={[totem.latitude, totem.longitude]}>
+            <Popup>{totem.name}</Popup>
+          </Marker>
+        ))}
+        {/* Renderizar recepciones */}
+        {receptions.map(reception => (
+          <Marker key={reception.id} position={[reception.latitude, reception.longitude]}>
+            <Popup>{reception.name}</Popup>
+          </Marker>
+        ))}
+        {/* Dibuja el camino actual mientras se está creando */}
+        {currentPathPoints.length > 1 && (
+          <Polyline positions={currentPathPoints} color="red" />
+        )}
+        {/* Renderizar camino seleccionado */}
+        {selectedPath && (
+          <Polyline positions={selectedPath.points.map(p => [p.latitude, p.longitude])} color="blue" />
+        )}
+      </MapContainer>
     </Box>
   );
 };
 
-export default MapaInteractivo;
+export default OpenMap;

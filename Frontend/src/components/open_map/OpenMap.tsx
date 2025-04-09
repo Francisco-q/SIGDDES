@@ -1,5 +1,6 @@
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
+import RemoveIcon from '@mui/icons-material/Remove';
 import {
   Box,
   Button,
@@ -23,7 +24,7 @@ interface TotemQR {
   name: string;
   description: string;
   imageUrl: string;
-  campus: string; // Añadido
+  campus: string;
 }
 
 interface ReceptionQR {
@@ -33,7 +34,6 @@ interface ReceptionQR {
   name: string;
   description: string;
   imageUrl: string;
-  campus: string; // Añadido
 }
 
 interface PathPoint {
@@ -46,7 +46,6 @@ interface Path {
   id: number;
   name: string;
   points: PathPoint[];
-  campus: string;
 }
 
 const OpenMap: React.FC = () => {
@@ -123,7 +122,7 @@ const OpenMap: React.FC = () => {
       }
 
       const updatedPoint = { ...selectedPoint, imageUrl };
-      const endpoint = 'campus' in selectedPoint && selectedPoint.latitude ? 'totems' : 'recepciones';
+      const endpoint = selectedPoint.hasOwnProperty('latitude') ? 'totems' : 'recepciones';
       const response = await fetch(`http://localhost:8000/api/${endpoint}/${selectedPoint.id}/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -149,35 +148,30 @@ const OpenMap: React.FC = () => {
   };
 
   useEffect(() => {
-    if (campus) {
-      // Cargar tótems específicos del campus
-      fetch(`http://localhost:8000/api/totems/?campus=${campus}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Error al obtener totems');
-          return res.json();
-        })
-        .then((data: TotemQR[]) => setTotems(data))
-        .catch(error => console.error('Error fetching totems:', error));
+    fetch('http://localhost:8000/api/totems/')
+      .then(res => {
+        if (!res.ok) throw new Error('Error al obtener totems');
+        return res.json();
+      })
+      .then((data: TotemQR[]) => setTotems(data))
+      .catch(error => console.error('Error fetching totems:', error));
 
-      // Cargar recepciones específicas del campus
-      fetch(`http://localhost:8000/api/recepciones/?campus=${campus}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Error al obtener recepciones');
-          return res.json();
-        })
-        .then((data: ReceptionQR[]) => setReceptions(data))
-        .catch(error => console.error('Error fetching receptions:', error));
+    fetch('http://localhost:8000/api/recepciones/')
+      .then(res => {
+        if (!res.ok) throw new Error('Error al obtener recepciones');
+        return res.json();
+      })
+      .then((data: ReceptionQR[]) => setReceptions(data))
+      .catch(error => console.error('Error fetching receptions:', error));
 
-      // Cargar caminos específicos del campus
-      fetch(`http://localhost:8000/api/caminos/?campus=${campus}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Error al obtener caminos');
-          return res.json();
-        })
-        .then((data: Path[]) => setPaths(data))
-        .catch(error => console.error('Error fetching paths:', error));
-    }
-  }, [campus]);
+    fetch('http://localhost:8000/api/caminos/')
+      .then(res => {
+        if (!res.ok) throw new Error('Error al obtener caminos');
+        return res.json();
+      })
+      .then((data: Path[]) => setPaths(data))
+      .catch(error => console.error('Error fetching paths:', error));
+  }, []);
 
   const MapClickHandler: React.FC = () => {
     useMapEvents({
@@ -191,9 +185,9 @@ const OpenMap: React.FC = () => {
             latitude: lat,
             longitude: lng,
             name: 'Nuevo Totem QR',
-            description: '',
+            description: 'def',
             imageUrl: '',
-            campus: campus || '', // Asociar al campus actual
+            campus: campus || '',
           };
           saveTotem(newTotem);
           setIsCreatingTotem(false);
@@ -201,10 +195,9 @@ const OpenMap: React.FC = () => {
           const newReception: Omit<ReceptionQR, 'id'> = {
             latitude: lat,
             longitude: lng,
-            name: 'Nueva Recepción QR',
+            name: 'Nuevo Espacio Seguro',
             description: '',
             imageUrl: '',
-            campus: campus || '', // Asociar al campus actual
           };
           saveReception(newReception);
           setIsCreatingReception(false);
@@ -265,10 +258,6 @@ const OpenMap: React.FC = () => {
       alert('El nombre debe tener al menos 3 caracteres.');
       return;
     }
-    if (!campus) {
-      alert('No se ha especificado un campus.');
-      return;
-    }
 
     const pathData = {
       name: trimmedName,
@@ -277,7 +266,6 @@ const OpenMap: React.FC = () => {
         longitude: point[1],
         order: index + 1,
       })),
-      campus: campus,
     };
 
     try {
@@ -350,7 +338,7 @@ const OpenMap: React.FC = () => {
               fontSize: '16px',
             }}
           >
-            -
+            <RemoveIcon />
           </IconButton>
           <Button
             fullWidth
@@ -379,20 +367,7 @@ const OpenMap: React.FC = () => {
                 color="success"
                 sx={{ marginBottom: 1 }}
               >
-                Finalizar Camino
-              </Button>
-              <Button
-                fullWidth
-                onClick={() => {
-                  setIsCreatingPath(false);
-                  setCurrentPathPoints([]);
-                  setPathName('');
-                }}
-                variant="outlined"
-                color="error"
-                sx={{ marginBottom: 1 }}
-              >
-                Cancelar Camino
+                Guardar Camino
               </Button>
             </>
           )}
@@ -426,7 +401,7 @@ const OpenMap: React.FC = () => {
             color={isCreatingReception ? 'secondary' : 'primary'}
             sx={{ marginBottom: 1 }}
           >
-            {isCreatingReception ? 'Cancelar Crear Recepción QR' : 'Crear Recepción QR'}
+            {isCreatingReception ? 'Cancelar Espacio Seguro' : 'Crear Espacio Seguro'}
           </Button>
           <Button
             fullWidth
@@ -465,7 +440,7 @@ const OpenMap: React.FC = () => {
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          opacity={0.1}
+          opacity={0}
           maxZoom={19}
           minZoom={10}
         />

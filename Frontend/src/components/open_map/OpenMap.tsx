@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import {
   Box,
   Button,
@@ -17,6 +18,9 @@ import {
   Tabs,
   TextField
 } from '@mui/material';
+import { TotemQR, ReceptionQR, Path, PathPoint } from '../../types/types';
+import { fetchTotems, fetchReceptions, fetchPaths } from '../../services/apiService';
+
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,36 +29,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import SetView from './SetView';
 
-interface TotemQR {
-  id: number;
-  latitude: number;
-  longitude: number;
-  name: string;
-  description: string;
-  imageUrl: string;
-  campus: string;
-}
 
-interface ReceptionQR {
-  id: number;
-  latitude: number;
-  longitude: number;
-  name: string;
-  description: string;
-  imageUrl: string;
-}
-
-interface PathPoint {
-  latitude: number;
-  longitude: number;
-  order: number;
-}
-
-interface Path {
-  id: number;
-  name: string;
-  points: PathPoint[];
-}
 
 // Esquema de validación para el formulario de denuncia
 const formSchema = z.object({
@@ -185,30 +160,23 @@ const OpenMap: React.FC = () => {
   };
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/totems/')
-      .then(res => {
-        if (!res.ok) throw new Error('Error al obtener totems');
-        return res.json();
-      })
-      .then((data: TotemQR[]) => setTotems(data))
-      .catch(error => console.error('Error fetching totems:', error));
-
-    fetch('http://localhost:8000/api/recepciones/')
-      .then(res => {
-        if (!res.ok) throw new Error('Error al obtener recepciones');
-        return res.json();
-      })
-      .then((data: ReceptionQR[]) => setReceptions(data))
-      .catch(error => console.error('Error fetching receptions:', error));
-
-    fetch('http://localhost:8000/api/caminos/')
-      .then(res => {
-        if (!res.ok) throw new Error('Error al obtener caminos');
-        return res.json();
-      })
-      .then((data: Path[]) => setPaths(data))
-      .catch(error => console.error('Error fetching paths:', error));
-  }, []);
+    if (campus) {
+      // Cargar tótems específicos del campus
+      fetchTotems(campus)
+        .then((data) => setTotems(data))
+        .catch((error) => console.error('Error fetching totems:', error));
+  
+      // Cargar recepciones específicas del campus
+      fetchReceptions(campus)
+        .then((data) => setReceptions(data))
+        .catch((error) => console.error('Error fetching receptions:', error));
+  
+      // Cargar caminos específicos del campus
+      fetchPaths(campus)
+        .then((data) => setPaths(data))
+        .catch((error) => console.error('Error fetching paths:', error));
+    }
+  }, [campus]);
 
   const MapClickHandler: React.FC = () => {
     useMapEvents({
@@ -412,7 +380,7 @@ const OpenMap: React.FC = () => {
               </Box>
             ) : (
               <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={{ maxWidth: 900, mx: 'auto' }}>
-                <h2>Formulario de Denuncia de Género</h2>
+                <h2>Formulario de Denuncia</h2>
                 <p>Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género.</p>
 
                 <Box sx={{ mt: 2 }}>

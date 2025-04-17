@@ -7,7 +7,6 @@ from .serializers import TotemQRSerializer, ReceptionQRSerializer, PathSerialize
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import default_storage
 import math
-import qrcode
 from io import BytesIO
 from django.shortcuts import get_object_or_404
 
@@ -24,50 +23,6 @@ class TotemQRViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(campus=campus)
         return queryset
 
-    @action(detail=True, methods=['get'])
-    def generate_qr(self, request, pk=None):
-        """
-        Genera un código QR único para el tótem.
-        """
-        # Obtén el tótem desde la base de datos
-        totem = get_object_or_404(TotemQR, pk=pk)
-
-        # Genera la URL única para el tótem
-        qr_data = f"https://example.com/totem/{totem.id}"  # Cambia "example.com" por tu dominio
-
-        # Genera el código QR
-        qr = qrcode.make(qr_data)
-
-        # Devuelve el QR como una imagen PNG
-        response = HttpResponse(content_type="image/png")
-        qr.save(response, "PNG")
-        return response
-        
-    def perform_create(self, serializer):
-        # Guarda el tótem y genera el QR
-        totem = serializer.save()
-        self.generate_and_save_qr(totem)
-
-    def perform_update(self, serializer):
-        # Actualiza el tótem y genera el QR
-        totem = serializer.save()
-        self.generate_and_save_qr(totem)
-
-    def generate_and_save_qr(self, totem):
-        """
-        Genera y guarda un código QR único para el tótem.
-        """
-        qr_data = f"https://example.com/totem/{totem.id}"  # Cambia "example.com" por tu dominio
-        qr = qrcode.make(qr_data)
-
-        # Guarda el QR como un archivo en memoria
-        buffer = BytesIO()
-        qr.save(buffer, format="PNG")
-        buffer.seek(0)
-
-        # Guarda el archivo en el modelo
-        totem.image_url = f"https://example.com/media/qr_codes/totem_{totem.id}.png"  # Cambia la URL base
-        totem.save()
 
 class ImageUploadViewSet(viewsets.ViewSet):
     parser_classes = (MultiPartParser, FormParser)

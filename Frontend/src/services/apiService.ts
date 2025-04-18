@@ -1,22 +1,30 @@
-import { TotemQR, ReceptionQR, Path, PathPoint } from '../types/types';
+import axios from 'axios';
+import { Path } from 'react-router-dom';
+import { ReceptionQR, TotemQR } from '../types/types';
 
-// Función para obtener tótems
 export const fetchTotems = async (campus: string): Promise<TotemQR[]> => {
-  const response = await fetch(`http://localhost:8000/api/totems/?campus=${campus}`);
-  if (!response.ok) throw new Error('Error al obtener tótems');
-  return response.json();
+  const response = await axios.get(`http://localhost:8000/api/totems/?campus=${campus}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+  return response.data;
 };
 
-// Función para obtener recepciones
 export const fetchReceptions = async (campus: string): Promise<ReceptionQR[]> => {
-  const response = await fetch(`http://localhost:8000/api/recepciones/?campus=${campus}`);
-  if (!response.ok) throw new Error('Error al obtener recepciones');
-  return response.json();
+  const response = await axios.get(`http://localhost:8000/api/recepciones/?campus=${campus}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+  return response.data;
 };
 
-// Función para obtener caminos
 export const fetchPaths = async (campus: string): Promise<Path[]> => {
-  const response = await fetch(`http://localhost:8000/api/caminos/?campus=${campus}`);
-  if (!response.ok) throw new Error('Error al obtener caminos');
-  return response.json();
-}; 
+  const response = await axios.get(`http://localhost:8000/api/caminos/?campus=${campus}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+    },
+  });
+  return response.data;
+};

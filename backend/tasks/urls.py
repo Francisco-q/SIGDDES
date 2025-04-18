@@ -8,7 +8,8 @@ router.register(r'partidas', StartingPointViewSet)
 router.register(r'caminos', PathViewSet)
 router.register(r'puntos', PointViewSet, basename='puntos')
 router.register(r'caminos', PathViewSet, basename='caminos')
-router.register(r'upload', ImageUploadViewSet, basename='upload')  # Registrar el ViewSet para subir imágenes
+router.register(r'upload', ImageUploadViewSet, basename='upload')
+router.register(r'denuncias', DenunciaViewSet, basename='denuncia')
 
 urlpatterns = [
     path('', home),

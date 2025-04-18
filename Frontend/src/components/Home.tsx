@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import AppSidebar from './dashboard/Appsidebar';
+import AppSidebar from './dashboard/AppSidebar';
 import Dashboard from './dashboard/DashboardDenuncias';
 
 const Home: React.FC = () => {
@@ -11,7 +11,7 @@ const Home: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {/* Sidebar permanente */}
-      <AppSidebar variant="permanent" />
+      <AppSidebar />
 
 
       {/* Dashboard */}

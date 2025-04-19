@@ -93,6 +93,7 @@ const App: React.FC = () => {
             headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
           });
           setRole(response.data.role);
+          console.log('User role:', response.data.role);
           setError(null);
         } catch (error: any) {
           console.error('Error fetching user role:', error);

@@ -1,11 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Cancel as CancelIcon,
+  Home as HomeIcon,
+  QrCode as QrCodeIcon,
+  Route as RouteIcon,
+  Save as SaveIcon,
+  ShieldMoon as ShieldIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+} from '@mui/icons-material';
+import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -16,6 +22,7 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import axios from 'axios';
@@ -25,8 +32,15 @@ import { useForm } from 'react-hook-form';
 import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
+import ColchaguaSvg from '../../assets/Colchagua.svg';
+import CuricoSvg from '../../assets/Curico.svg';
+import PehuencheSvg from '../../assets/Pehuenche.svg';
+import SantiagoSvg from '../../assets/Santiago.svg';
+import TalcaSvg from '../../assets/Talca.svg';
 import { fetchPaths, fetchReceptions, fetchTotems } from '../../services/apiService';
 import { Path, ReceptionQR, TotemQR } from '../../types/types';
+import InfoPunto from './InfoPunto';
+import './OpenMap.css';
 import SetView from './SetView';
 
 // Esquema de validación para el formulario de denuncia
@@ -52,6 +66,7 @@ const OpenMap: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [svgError, setSvgError] = useState<string | null>(null);
 
   const svgBounds: [[number, number], [number, number]] = [
     [51.505, -0.09],
@@ -60,11 +75,22 @@ const OpenMap: React.FC = () => {
 
   const getMapaSrc = (campus: string | undefined) => {
     if (!campus) {
-      console.error('Campus no especificado');
-      return '';
+      return { src: '', error: 'No se especificó un campus.' };
     }
-    const src = `/assets/${campus}.svg`;
-    return src;
+    switch (campus.toLowerCase()) {
+      case 'talca':
+        return { src: TalcaSvg, error: null };
+      case 'curico':
+        return { src: CuricoSvg, error: null };
+      case 'colchagua':
+        return { src: ColchaguaSvg, error: null };
+      case 'pehuenche':
+        return { src: PehuencheSvg, error: null };
+      case 'santiago':
+        return { src: SantiagoSvg, error: null };
+      default:
+        return { src: '', error: `No se encontró un mapa para el campus ${campus}.` };
+    }
   };
 
   const [totems, setTotems] = useState<TotemQR[]>([]);
@@ -103,10 +129,6 @@ const OpenMap: React.FC = () => {
     }
   };
 
-  // Validar autenticación al cargar el componente
-  useEffect(() => {
-    console.log('Valor actual de role:', role);
-  }, [role]);
   useEffect(() => {
     const validateToken = async () => {
       const accessToken = localStorage.getItem('access_token');
@@ -121,10 +143,8 @@ const OpenMap: React.FC = () => {
         const response = await axios.get('http://localhost:8000/api/user/current_user/', {
           headers: { Authorization: `Bearer ${accessToken} ` },
         });
+        console.log('Respuesta de /api/user/current_user/:', response.data);
         setRole(response.data.role);
-        console.log('Rol del usuario:', response.data.role);
-        console.log('Datos del usuario:', response.data);
-        console.log('Token de acceso:', accessToken);
         setIsAuthenticated(true);
         setError(null);
       } catch (error: any) {
@@ -135,6 +155,7 @@ const OpenMap: React.FC = () => {
               const response = await axios.get('http://localhost:8000/api/user/current_user/', {
                 headers: { Authorization: `Bearer ${newToken} ` },
               });
+              console.log('Respuesta después de refresh:', response.data);
               setRole(response.data.role);
               setIsAuthenticated(true);
               setError(null);
@@ -154,9 +175,8 @@ const OpenMap: React.FC = () => {
     validateToken();
   }, []);
 
-  // Cargar datos del campus
   useEffect(() => {
-    if (isAuthenticated && role && ['admin', 'user', 'guest'].includes(role) && campus) {
+    if (isAuthenticated && role && ['admin', 'user', 'guest', 'superuser'].includes(role) && campus) {
       const loadData = async () => {
         try {
           const [totemsData, receptionsData, pathsData] = await Promise.all([
@@ -192,43 +212,22 @@ const OpenMap: React.FC = () => {
           setError('No se pudieron cargar los datos del mapa. Por favor, intenta de nuevo.');
         }
       };
-
-      console.log(role);
-      console.log(isAuthenticated);
-
       loadData();
     }
   }, [isAuthenticated, role, campus]);
 
-  const handlePointClick = async (point: TotemQR | ReceptionQR) => {
-    if (role === 'admin') {
-      setSelectedPoint(point);
-      setIsModalOpen(true);
+  useEffect(() => {
+    const { src, error } = getMapaSrc(campus);
+    if (error) {
+      setSvgError(error);
     } else {
-      try {
-        const response = await axios.get(`http://localhost:8000/api/totems/${point.id}/nearest_path/`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
-        });
-        setSelectedPath(response.data);
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          const newToken = await refreshToken();
-          if (newToken) {
-            try {
-              const response = await axios.get(`http://localhost:8000/api/totems/${point.id}/nearest_path/`, {
-                headers: { Authorization: `Bearer ${newToken}` },
-              });
-              setSelectedPath(response.data);
-              return;
-            } catch (retryError) {
-              console.error('Error fetching nearest path after refresh:', retryError);
-            }
-          }
-        }
-        console.error('Error fetching nearest path:', error);
-        setError('No se pudo obtener el camino más corto.');
-      }
+      setSvgError(null);
     }
+  }, [campus]);
+
+  const handlePointClick = async (point: TotemQR | ReceptionQR) => {
+    setSelectedPoint(point);
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
@@ -237,38 +236,26 @@ const OpenMap: React.FC = () => {
     setImageFile(null);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (selectedPoint) {
-      setSelectedPoint({ ...selectedPoint, [e.target.name]: e.target.value });
-    }
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!selectedPoint || role !== 'admin') return;
+  const handleSavePoint = async (updatedPoint: TotemQR | ReceptionQR) => {
+    if (!updatedPoint || !['admin', 'superuser'].includes(role as string)) return;
 
     try {
-      let imageUrl = selectedPoint.imageUrl;
+      let imageUrl = updatedPoint.imageUrl;
       if (imageFile) {
         const formData = new FormData();
         formData.append('file', imageFile);
-        formData.append('totem_id', selectedPoint.id.toString());
+        formData.append('totem_id', updatedPoint.id.toString());
         const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+            Authorization: `Bearer ${localStorage.getItem('access_token')} `,
           },
         });
         imageUrl = response.data.imageUrl;
       }
 
-      const updatedPoint = { ...selectedPoint, imageUrl };
-      const endpoint = 'campus' in updatedPoint ? 'totems' : 'recepciones';
-      const response = await axios.put(`http://localhost:8000/api/${endpoint}/${selectedPoint.id}/`, updatedPoint, {
+      const pointData = { ...updatedPoint, imageUrl };
+      const endpoint = 'campus' in pointData ? 'totems' : 'recepciones';
+      const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
@@ -287,11 +274,11 @@ const OpenMap: React.FC = () => {
         const newToken = await refreshToken();
         if (newToken) {
           try {
-            let imageUrl = selectedPoint.imageUrl;
+            let imageUrl = updatedPoint.imageUrl;
             if (imageFile) {
               const formData = new FormData();
               formData.append('file', imageFile);
-              formData.append('totem_id', selectedPoint.id.toString());
+              formData.append('totem_id', updatedPoint.id.toString());
               const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
                 headers: {
                   Authorization: `Bearer ${newToken}`,
@@ -300,9 +287,9 @@ const OpenMap: React.FC = () => {
               imageUrl = response.data.imageUrl;
             }
 
-            const updatedPoint = { ...selectedPoint, imageUrl };
-            const endpoint = 'campus' in updatedPoint ? 'totems' : 'recepciones';
-            const response = await axios.put(`http://localhost:8000/api/${endpoint}/${selectedPoint.id}/`, updatedPoint, {
+            const pointData = { ...updatedPoint, imageUrl };
+            const endpoint = 'campus' in pointData ? 'totems' : 'recepciones';
+            const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
               headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${newToken}`,
@@ -322,8 +309,56 @@ const OpenMap: React.FC = () => {
           }
         }
       }
-      console.error('Error:', error);
+      console.error('Error saving point:', error);
       setError('No se pudo guardar el punto.');
+    }
+  };
+
+  const handleDeletePoint = async (pointId: number, isTotem: boolean) => {
+    if (!['admin', 'superuser'].includes(role as string)) return;
+
+    try {
+      const endpoint = isTotem ? 'totems' : 'recepciones';
+      await axios.delete(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (isTotem) {
+        setTotems(totems.filter(t => t.id !== pointId));
+      } else {
+        setReceptions(receptions.filter(r => r.id !== pointId));
+      }
+
+      handleCloseModal();
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        const newToken = await refreshToken();
+        if (newToken) {
+          try {
+            const endpoint = isTotem ? 'totems' : 'recepciones';
+            await axios.delete(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
+              headers: {
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
+
+            if (isTotem) {
+              setTotems(totems.filter(t => t.id !== pointId));
+            } else {
+              setReceptions(receptions.filter(r => r.id !== pointId));
+            }
+
+            handleCloseModal();
+            return;
+          } catch (retryError) {
+            console.error('Error deleting point after refresh:', retryError);
+          }
+        }
+      }
+      console.error('Error deleting point:', error);
+      setError('No se pudo eliminar el punto.');
     }
   };
 
@@ -334,7 +369,7 @@ const OpenMap: React.FC = () => {
   const MapClickHandler: React.FC = () => {
     useMapEvents({
       click(e) {
-        if (role !== 'admin') return;
+        if (!['admin', 'superuser'].includes(role as string)) return;
         const { lat, lng } = e.latlng;
         if (isCreatingPath) {
           setCurrentPathPoints([...currentPathPoints, [lat, lng]]);
@@ -441,7 +476,7 @@ const OpenMap: React.FC = () => {
   };
 
   const confirmSavePath = async () => {
-    if (role !== 'admin') return;
+    if (!['admin', 'superuser'].includes(role as string)) return;
     const trimmedName = pathName.trim();
     if (!trimmedName || trimmedName.length < 3) {
       alert('Por favor, ingresa un nombre válido para el camino.');
@@ -505,7 +540,6 @@ const OpenMap: React.FC = () => {
     setShowPaths(!showPaths);
   };
 
-  // Configuración del formulario
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -573,79 +607,104 @@ const OpenMap: React.FC = () => {
     );
   }
 
-  if (!role || !['admin', 'user', 'guest'].includes(role)) {
+  if (!role || !['admin', 'user', 'guest', 'superuser'].includes(role)) {
     return <Typography>Acceso denegado. Por favor, inicia sesión.</Typography>;
   }
 
+  const { src: mapaSrc, error: mapaError } = getMapaSrc(campus);
+
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {error && (
-        <Typography color="error" sx={{ p: 2 }}>
-          {error}
+    <Box className="openmap-container">
+      {(error || svgError || mapaError) && (
+        <Typography className="openmap-error">
+          {error || svgError || mapaError}
         </Typography>
       )}
-      <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ zIndex: 1000, backgroundColor: 'rgba(238, 219, 255, 0.68)' }}>
+      <Tabs
+        value={tabValue}
+        onChange={handleTabChange}
+        centered
+        className="openmap-tabs"
+      >
         <Tab label="Mapa" />
         <Tab label="Denuncia" />
       </Tabs>
 
-      {/* Pestaña Mapa */}
       {tabValue === 0 && (
-        <Box sx={{ flex: 1, position: 'relative' }}>
-          <MapContainer style={{ height: '100%', width: '100%', backgroundColor: 'rgba(238, 219, 255, 0.68)' }} zoom={18} maxZoom={22} minZoom={10} zoomControl={false}>
-            {!isCreatingPath && <SetView bounds={svgBounds} zoom={18} />}
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              opacity={0}
-              maxZoom={19}
+        <Box className="openmap-map-container">
+          {mapaSrc ? (
+            <MapContainer
+              className="openmap-map"
+              zoom={18}
+              maxZoom={22}
               minZoom={10}
-            />
-            {campus && (
-              <ImageOverlay
-                url={getMapaSrc(campus)}
-                bounds={svgBounds}
-                opacity={1}
-                eventHandlers={{ error: () => console.error('Error al cargar el archivo SVG') }}
+              zoomControl={false}
+            >
+              {!isCreatingPath && <SetView bounds={svgBounds} zoom={18} />}
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                opacity={0}
+                maxZoom={19}
+                minZoom={10}
               />
-            )}
-            <MapClickHandler />
-            {totems.map(totem => (
-              <Marker
-                key={totem.id}
-                position={[totem.latitude, totem.longitude]}
-                interactive={!isCreatingPath}
-                eventHandlers={{ click: () => !isCreatingPath && handlePointClick(totem) }}
-              >
-                <Popup>{totem.name}</Popup>
-              </Marker>
-            ))}
-            {receptions.map(reception => (
-              <Marker
-                key={reception.id}
-                position={[reception.latitude, reception.longitude]}
-                interactive={!isCreatingPath}
-                eventHandlers={{ click: () => !isCreatingPath && handlePointClick(reception) }}
-              >
-                <Popup>{reception.name}</Popup>
-              </Marker>
-            ))}
-            {currentPathPoints.length > 1 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
-            {showPaths &&
-              paths.map(path => (
-                <Polyline key={path.id} positions={path.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
+              {campus && (
+                <ImageOverlay
+                  url={mapaSrc}
+                  bounds={svgBounds}
+                  opacity={1}
+                  eventHandlers={{
+                    error: () => {
+                      console.error('Error al cargar el archivo SVG');
+                      setSvgError('No se pudo cargar el mapa del campus. Verifica que el archivo SVG sea válido.');
+                    },
+                  }}
+                />
+              )}
+              <MapClickHandler />
+              {totems.map(totem => (
+                <Marker
+                  key={totem.id}
+                  position={[totem.latitude, totem.longitude]}
+                  interactive={!isCreatingPath}
+                  eventHandlers={{ click: () => !isCreatingPath && handlePointClick(totem) }}
+                >
+                  <Popup>{totem.name}</Popup>
+                </Marker>
               ))}
-            {selectedPath && (
-              <Polyline positions={selectedPath.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
-            )}
-            <ZoomControl position="topright" />
-          </MapContainer>
+              {receptions.map(reception => (
+                <Marker
+                  key={reception.id}
+                  position={[reception.latitude, reception.longitude]}
+                  interactive={!isCreatingPath}
+                  eventHandlers={{ click: () => !isCreatingPath && handlePointClick(reception) }}
+                >
+                  <Popup>{reception.name}</Popup>
+                </Marker>
+              ))}
+              {currentPathPoints.length > 1 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
+              {showPaths &&
+                paths.map(path => (
+                  <Polyline key={path.id} positions={path.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
+                ))}
+              {selectedPath && (
+                <Polyline positions={selectedPath.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
+              )}
+              <ZoomControl position="topright" />
+            </MapContainer>
+          ) : (
+            <Box className="openmap-error">
+              <Typography>No se encontró un mapa para el campus seleccionado.</Typography>
+              <Button variant="contained" color="primary" onClick={() => navigate('/home')}>
+                Volver a la página principal
+              </Button>
+            </Box>
+          )}
         </Box>
       )}
 
-      {/* Pestaña Denuncia */}
       {tabValue === 1 && (
-        <Box sx={{ flex: 1, p: 3, overflow: 'auto', backgroundColor: 'rgb(255, 255, 255)' }}>
+        <Box className="openmap-form-container">
           {submitted ? (
             <Box sx={{ textAlign: 'center', mt: 10 }}>
               <Typography variant="h5">Denuncia Enviada</Typography>
@@ -656,17 +715,17 @@ const OpenMap: React.FC = () => {
                   setSubmitted(false);
                   form.reset();
                 }}
-                sx={{ mt: 2 }}
+                className="openmap-form-button"
               >
                 Realizar otra denuncia
               </Button>
             </Box>
           ) : (
-            <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={{ maxWidth: 900, mx: 'auto' }}>
-              <Typography variant="h5">Formulario de Denuncia</Typography>
+            <Box component="form" onSubmit={form.handleSubmit(onSubmit)} className="openmap-form">
+              <Typography variant="h5" className="openmap-form-title">Formulario de Denuncia</Typography>
               <Typography>Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género.</Typography>
 
-              <Box sx={{ mt: 2 }}>
+              <Box className="openmap-form-section">
                 <Typography variant="h6">Información Personal</Typography>
                 <TextField
                   label="Nombre"
@@ -714,7 +773,7 @@ const OpenMap: React.FC = () => {
                 </FormControl>
               </Box>
 
-              <Box sx={{ mt: 2 }}>
+              <Box className="openmap-form-section">
                 <Typography variant="h6">Detalles del Incidente</Typography>
                 <FormControl fullWidth margin="normal" error={!!form.formState.errors.tipoIncidente}>
                   <InputLabel>Tipo de Incidente</InputLabel>
@@ -765,7 +824,7 @@ const OpenMap: React.FC = () => {
                 />
               </Box>
 
-              <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+              <Button type="submit" variant="contained" color="primary" className="openmap-form-button">
                 Enviar Denuncia
               </Button>
             </Box>
@@ -773,140 +832,104 @@ const OpenMap: React.FC = () => {
         </Box>
       )}
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: 'rgba(238, 219, 255, 0.68)',
-          boxShadow: 3,
-          padding: 2,
-          zIndex: 1000,
-        }}
-      >
-        <Button onClick={handleGoHome} variant="contained" color="primary" sx={{ marginRight: 2 }}>
-          HOMEPAGE
-        </Button>
-        {role === 'admin' && (
+      <Box className="openmap-buttons-container">
+        <Tooltip title="Volver a la página principal">
+          <Button
+            onClick={handleGoHome}
+            variant="contained"
+            color="primary"
+            className="openmap-button"
+            aria-label="Volver a la página principal"
+          >
+            <HomeIcon />
+          </Button>
+        </Tooltip>
+        {['admin', 'superuser'].includes(role as string) && (
           <>
-            <Button
-              onClick={() => {
-                if (isCreatingPath) {
-                  setIsCreatingPath(false);
-                  setCurrentPathPoints([]);
-                  setPathName('');
-                } else {
-                  setIsCreatingPath(true);
-                }
-              }}
-              disabled={isCreatingTotem || isCreatingReception}
-              variant="contained"
-              color={isCreatingPath ? 'secondary' : 'primary'}
-              sx={{ marginRight: 2 }}
-            >
-              {isCreatingPath ? 'Cancelar Crear Camino' : 'Crear Camino'}
-            </Button>
+            <Tooltip title={isCreatingPath ? 'Cancelar Crear Camino' : 'Crear Camino'}>
+              <Button
+                onClick={() => {
+                  if (isCreatingPath) {
+                    setIsCreatingPath(false);
+                    setCurrentPathPoints([]);
+                    setPathName('');
+                  } else {
+                    setIsCreatingPath(true);
+                  }
+                }}
+                disabled={isCreatingTotem || isCreatingReception}
+                variant="contained"
+                color={isCreatingPath ? 'secondary' : 'primary'}
+                className="openmap-button"
+                aria-label={isCreatingPath ? 'Cancelar Crear Camino' : 'Crear Camino'}
+              >
+                {isCreatingPath ? <CancelIcon /> : <RouteIcon />}
+              </Button>
+            </Tooltip>
 
             {isCreatingPath && (
-              <Button onClick={savePath} variant="contained" color="success" sx={{ marginRight: 2 }}>
-                Guardar Camino
-              </Button>
+              <Tooltip title="Guardar Camino">
+                <Button
+                  onClick={savePath}
+                  variant="contained"
+                  color="success"
+                  className="openmap-button"
+                  aria-label="Guardar Camino"
+                >
+                  <SaveIcon />
+                </Button>
+              </Tooltip>
             )}
 
-            <Button
-              onClick={() => setIsCreatingTotem(!isCreatingTotem)}
-              disabled={isCreatingPath || isCreatingReception}
-              variant="contained"
-              color={isCreatingTotem ? 'secondary' : 'primary'}
-              sx={{ marginRight: 2 }}
-            >
-              {isCreatingTotem ? 'Cancelar Crear Punto QR' : 'Crear Punto QR'}
-            </Button>
+            <Tooltip title={isCreatingTotem ? 'Cancelar Crear Punto QR' : 'Crear Punto QR'}>
+              <Button
+                onClick={() => setIsCreatingTotem(!isCreatingTotem)}
+                disabled={isCreatingPath || isCreatingReception}
+                variant="contained"
+                color={isCreatingTotem ? 'secondary' : 'primary'}
+                className="openmap-button"
+                aria-label={isCreatingTotem ? 'Cancelar Crear Punto QR' : 'Crear Punto QR'}
+              >
+                {isCreatingTotem ? <CancelIcon /> : <QrCodeIcon />}
+              </Button>
+            </Tooltip>
 
-            <Button
-              onClick={() => setIsCreatingReception(!isCreatingReception)}
-              disabled={isCreatingPath || isCreatingTotem}
-              variant="contained"
-              color={isCreatingReception ? 'secondary' : 'primary'}
-              sx={{ marginRight: 2 }}
-            >
-              {isCreatingReception ? 'Cancelar Espacio Seguro' : 'Crear Espacio Seguro'}
-            </Button>
+            <Tooltip title={isCreatingReception ? 'Cancelar Espacio Seguro' : 'Crear Espacio Seguro'}>
+              <Button
+                onClick={() => setIsCreatingReception(!isCreatingReception)}
+                disabled={isCreatingPath || isCreatingTotem}
+                variant="contained"
+                color={isCreatingReception ? 'secondary' : 'primary'}
+                className="openmap-button"
+                aria-label={isCreatingReception ? 'Cancelar Espacio Seguro' : 'Crear Espacio Seguro'}
+              >
+                {isCreatingReception ? <CancelIcon /> : <ShieldIcon />}
+              </Button>
+            </Tooltip>
           </>
         )}
 
-        <Button onClick={toggleShowPaths} variant="contained" color={showPaths ? 'secondary' : 'primary'}>
-          {showPaths ? 'Ocultar Caminos' : 'Mostrar Caminos'}
-        </Button>
+        <Tooltip title={showPaths ? 'Ocultar Caminos' : 'Mostrar Caminos'}>
+          <Button
+            onClick={toggleShowPaths}
+            variant="contained"
+            color={showPaths ? 'secondary' : 'primary'}
+            className="openmap-button"
+            aria-label={showPaths ? 'Ocultar Caminos' : 'Mostrar Caminos'}
+          >
+            {showPaths ? <VisibilityOffIcon /> : <VisibilityIcon />}
+          </Button>
+        </Tooltip>
       </Box>
 
-      <Dialog open={isModalOpen} onClose={handleCloseModal}>
-        <DialogTitle>Editar Información</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Nombre"
-            name="name"
-            value={selectedPoint?.name || ''}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Descripción"
-            name="description"
-            value={selectedPoint?.description || ''}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            multiline
-            rows={4}
-          />
-          <input type="file" onChange={handleImageChange} accept="image/*" />
-          {selectedPoint?.imageUrl && (
-            <img src={selectedPoint.imageUrl} alt={selectedPoint.name} style={{ width: '100%', marginTop: '10px' }} />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal}>Cancelar</Button>
-          <Button onClick={handleSave} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)}>
-        <DialogTitle>Confirmar Guardado del Camino</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Nombre del camino"
-            value={pathName}
-            onChange={(e) => setPathName(e.target.value)}
-            fullWidth
-            margin="normal"
-            placeholder="Ingresa un nombre"
-            required
-            error={!pathName.trim() || pathName.trim().length < 3}
-            helperText={
-              !pathName.trim() ? 'El nombre es obligatorio' : pathName.trim().length < 3 ? 'Mínimo 3 caracteres' : ''
-            }
-          />
-          <Typography>¿Estás seguro de que deseas guardar este camino?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setIsConfirmModalOpen(false);
-              setPathName('');
-            }}
-            color="secondary"
-          >
-            Cancelar
-          </Button>
-          <Button onClick={confirmSavePath} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <InfoPunto
+        open={isModalOpen}
+        punto={selectedPoint}
+        role={role}
+        onClose={handleCloseModal}
+        onSave={handleSavePoint}
+        onDelete={handleDeletePoint}
+      />
     </Box>
   );
 };

@@ -1,0 +1,109 @@
+.openmap-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.openmap-error {
+    padding: 16px;
+    color: red;
+}
+
+/* Estilos para las pestañas */
+.openmap-tabs {
+    z-index: 1000;
+    background-color: rgba(238, 219, 255, 0.68);
+}
+
+/* Estilos para el mapa */
+.openmap-map-container {
+    flex: 1;
+    position: relative;
+}
+
+.openmap-map {
+    height: 100%;
+    width: 100%;
+    background-color: rgba(238, 219, 255, 0.68);
+}
+
+/* Estilos para el formulario */
+.openmap-form-container {
+    flex: 1;
+    padding: 24px;
+    overflow: auto;
+    background-color: rgb(255, 255, 255);
+}
+
+.openmap-form {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.openmap-form-title {
+    margin-bottom: 16px;
+}
+
+.openmap-form-section {
+    margin-top: 16px;
+}
+
+.openmap-form-button {
+    margin-top: 16px;
+}
+
+/* Estilos para los botones */
+.openmap-buttons-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background-color: rgba(238, 219, 255, 0);
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 12px;
+    z-index: 1000;
+}
+
+.openmap-button {
+    min-width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.openmap-button:hover {
+    transform: scale(1.05);
+}
+
+.openmap-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Estilo para tooltips */
+.MuiTooltip-tooltip {
+    font-size: 0.9rem;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+/* Responsividad */
+@media (max-width: 600px) {
+    .openmap-buttons-container {
+        justify-content: flex-start;
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .openmap-button {
+        min-width: 36px;
+        height: 36px;
+        padding: 6px;
+    }
+}

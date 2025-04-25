@@ -12,12 +12,13 @@ import {
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
-  Radio,
-  RadioGroup,
   Select,
   Tab,
   Tabs,
@@ -26,34 +27,48 @@ import {
   Typography,
 } from '@mui/material';
 import axios from 'axios';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
-import ColchaguaSvg from '../../assets/Colchagua.svg';
-import CuricoSvg from '../../assets/Curico.svg';
-import PehuencheSvg from '../../assets/Pehuenche.svg';
-import SantiagoSvg from '../../assets/Santiago.svg';
-import TalcaSvg from '../../assets/Talca.svg';
 import { fetchPaths, fetchReceptions, fetchTotems } from '../../services/apiService';
 import { Path, ReceptionQR, TotemQR } from '../../types/types';
 import InfoPunto from './InfoPunto';
 import './OpenMap.css';
 import SetView from './SetView';
 
+// Definir íconos personalizados
+const totemIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', // Ícono azul
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  shadowSize: [41, 41],
+});
+
+const receptionIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', // Ícono rojo
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  shadowSize: [41, 41],
+});
+
 // Esquema de validación para el formulario de denuncia
 const formSchema = z.object({
-  nombre: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }).optional(),
-  apellido: z.string().min(2, { message: 'El apellido debe tener al menos 2 caracteres.' }).optional(),
-  email: z.string().email({ message: 'Por favor ingrese un email válido.' }).optional(),
-  telefono: z.string().min(8, { message: 'Por favor ingrese un número de teléfono válido.' }).optional(),
+  nombre: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
+  apellido: z.string().min(2, { message: 'El apellido debe tener al menos 2 caracteres.' }),
+  email: z.string().email({ message: 'Por favor ingrese un email válido.' }),
+  telefono: z.string().min(8, { message: 'Por favor ingrese un número de teléfono válido.' }),
   tipoIncidente: z.string({ required_error: 'Por favor seleccione un tipo de incidente.' }),
   fechaIncidente: z.string({ required_error: 'Por favor ingrese la fecha del incidente.' }),
   lugarIncidente: z.string().min(2, { message: 'Por favor ingrese el lugar del incidente.' }),
   descripcion: z.string().min(10, { message: 'La descripción debe tener al menos 10 caracteres.' }),
-  anonimo: z.boolean().default(false),
   campus: z.string().optional(),
 });
 
@@ -73,29 +88,28 @@ const OpenMap: React.FC = () => {
     [51.51, -0.1],
   ];
 
+  const campusSvgMap: Record<string, string> = {
+    talca: '/assets/Talca.svg',
+    curico: '/assets/Curico.svg',
+    colchagua: '/assets/Colchagua.svg',
+    pehuenche: '/assets/Pehuenche.svg',
+    santiago: '/assets/Santiago.svg',
+  };
+
   const getMapaSrc = (campus: string | undefined) => {
     if (!campus) {
       return { src: '', error: 'No se especificó un campus.' };
     }
-    switch (campus.toLowerCase()) {
-      case 'talca':
-        return { src: TalcaSvg, error: null };
-      case 'curico':
-        return { src: CuricoSvg, error: null };
-      case 'colchagua':
-        return { src: ColchaguaSvg, error: null };
-      case 'pehuenche':
-        return { src: PehuencheSvg, error: null };
-      case 'santiago':
-        return { src: SantiagoSvg, error: null };
-      default:
-        return { src: '', error: `No se encontró un mapa para el campus ${campus}.` };
+    const campusLower = campus.toLowerCase();
+    const src = campusSvgMap[campusLower];
+    if (!src) {
+      return { src: '', error: `No se encontró un mapa para el campus ${campus}.` };
     }
+    return { src, error: null };
   };
 
   const [totems, setTotems] = useState<TotemQR[]>([]);
   const [receptions, setReceptions] = useState<ReceptionQR[]>([]);
-  const [selectedPath, setSelectedPath] = useState<Path | null>(null);
   const [paths, setPaths] = useState<Path[]>([]);
   const [showPaths, setShowPaths] = useState(false);
   const [isCreatingPath, setIsCreatingPath] = useState(false);
@@ -104,9 +118,10 @@ const OpenMap: React.FC = () => {
   const [currentPathPoints, setCurrentPathPoints] = useState<[number, number][]>([]);
   const [selectedPoint, setSelectedPoint] = useState<TotemQR | ReceptionQR | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pathName, setPathName] = useState('');
+  const [pathSaved, setPathSaved] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [submitted, setSubmitted] = useState(false);
 
@@ -141,7 +156,7 @@ const OpenMap: React.FC = () => {
 
       try {
         const response = await axios.get('http://localhost:8000/api/user/current_user/', {
-          headers: { Authorization: `Bearer ${accessToken} ` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
         console.log('Respuesta de /api/user/current_user/:', response.data);
         setRole(response.data.role);
@@ -153,7 +168,7 @@ const OpenMap: React.FC = () => {
           if (newToken) {
             try {
               const response = await axios.get('http://localhost:8000/api/user/current_user/', {
-                headers: { Authorization: `Bearer ${newToken} ` },
+                headers: { Authorization: `Bearer ${newToken}` },
               });
               console.log('Respuesta después de refresh:', response.data);
               setRole(response.data.role);
@@ -227,34 +242,67 @@ const OpenMap: React.FC = () => {
 
   const handlePointClick = async (point: TotemQR | ReceptionQR) => {
     setSelectedPoint(point);
+    setImageFiles([]);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPoint(null);
-    setImageFile(null);
+    setImageFiles([]);
   };
 
   const handleSavePoint = async (updatedPoint: TotemQR | ReceptionQR) => {
     if (!updatedPoint || !['admin', 'superuser'].includes(role as string)) return;
 
+    // Validar campos requeridos
+    if (!updatedPoint.name || updatedPoint.name.trim().length < 2) {
+      setError('El nombre del punto es requerido y debe tener al menos 2 caracteres.');
+      return;
+    }
+    if (!updatedPoint.campus) {
+      setError('El campus es requerido.');
+      return;
+    }
+    if (typeof updatedPoint.latitude !== 'number' || typeof updatedPoint.longitude !== 'number') {
+      setError('Las coordenadas (latitud y longitud) son requeridas.');
+      return;
+    }
+
+    // Determinar si es un tótem o una recepción
+    const isTotem = !('schedule' in updatedPoint);
+    console.log('Guardando punto:', { isTotem, updatedPoint });
+
     try {
-      let imageUrl = updatedPoint.imageUrl;
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append('file', imageFile);
-        formData.append('totem_id', updatedPoint.id.toString());
-        const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')} `,
-          },
-        });
-        imageUrl = response.data.imageUrl;
+      let imageUrls = Array.isArray(updatedPoint.imageUrls) ? updatedPoint.imageUrls : [];
+      if (imageFiles.length > 0) {
+        const newImageUrls: string[] = [];
+        for (const file of imageFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('totem_id', updatedPoint.id.toString());
+          const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+            },
+          });
+          newImageUrls.push(response.data.imageUrl);
+        }
+        imageUrls = [...imageUrls, ...newImageUrls];
       }
 
-      const pointData = { ...updatedPoint, imageUrl };
-      const endpoint = 'campus' in pointData ? 'totems' : 'recepciones';
+      const pointData = {
+        ...updatedPoint,
+        imageUrls,
+        description: updatedPoint.description || '',
+        status: updatedPoint.status || 'Operativo',
+        // Incluir schedule solo para recepciones
+        ...(isTotem ? {} : { schedule: (updatedPoint as ReceptionQR).schedule || '' }),
+      };
+
+      const endpoint = isTotem ? 'totems' : 'recepciones';
+      console.log('Enviando a endpoint:', endpoint, 'Datos:', pointData);
+
       const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
         headers: {
           'Content-Type': 'application/json',
@@ -262,10 +310,12 @@ const OpenMap: React.FC = () => {
         },
       });
 
-      if (endpoint === 'totems') {
-        setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data : t)));
+      console.log('Respuesta del backend:', response.data);
+
+      if (isTotem) {
+        setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data as TotemQR : t)));
       } else {
-        setReceptions(receptions.map(r => (r.id === updatedPoint.id ? response.data : r)));
+        setReceptions(receptions.map(r => (r.id === updatedPoint.id ? response.data as ReceptionQR : r)));
       }
 
       handleCloseModal();
@@ -274,21 +324,34 @@ const OpenMap: React.FC = () => {
         const newToken = await refreshToken();
         if (newToken) {
           try {
-            let imageUrl = updatedPoint.imageUrl;
-            if (imageFile) {
-              const formData = new FormData();
-              formData.append('file', imageFile);
-              formData.append('totem_id', updatedPoint.id.toString());
-              const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
-                headers: {
-                  Authorization: `Bearer ${newToken}`,
-                },
-              });
-              imageUrl = response.data.imageUrl;
+            let imageUrls = Array.isArray(updatedPoint.imageUrls) ? updatedPoint.imageUrls : [];
+            if (imageFiles.length > 0) {
+              const newImageUrls: string[] = [];
+              for (const file of imageFiles) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('totem_id', updatedPoint.id.toString());
+                const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
+                  headers: {
+                    Authorization: `Bearer ${newToken}`,
+                  },
+                });
+                newImageUrls.push(response.data.imageUrl);
+              }
+              imageUrls = [...imageUrls, ...newImageUrls];
             }
 
-            const pointData = { ...updatedPoint, imageUrl };
-            const endpoint = 'campus' in pointData ? 'totems' : 'recepciones';
+            const pointData = {
+              ...updatedPoint,
+              imageUrls,
+              description: updatedPoint.description || '',
+              status: updatedPoint.status || 'Operativo',
+              ...(isTotem ? {} : { schedule: (updatedPoint as ReceptionQR).schedule || '' }),
+            };
+
+            const endpoint = isTotem ? 'totems' : 'recepciones';
+            console.log('Reintentando con nuevo token en endpoint:', endpoint, 'Datos:', pointData);
+
             const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
               headers: {
                 'Content-Type': 'application/json',
@@ -296,21 +359,25 @@ const OpenMap: React.FC = () => {
               },
             });
 
-            if (endpoint === 'totems') {
-              setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data : t)));
+            console.log('Respuesta del backend (reintento):', response.data);
+
+            if (isTotem) {
+              setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data as TotemQR : t)));
             } else {
-              setReceptions(receptions.map(r => (r.id === updatedPoint.id ? response.data : r)));
+              setReceptions(receptions.map(r => (r.id === updatedPoint.id ? response.data as ReceptionQR : r)));
             }
 
             handleCloseModal();
             return;
           } catch (retryError) {
             console.error('Error saving point after refresh:', retryError);
+            setError('Error al guardar el punto tras reautenticación.');
           }
         }
       }
       console.error('Error saving point:', error);
-      setError('No se pudo guardar el punto.');
+      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo guardar el punto.';
+      setError(errorMessage);
     }
   };
 
@@ -319,6 +386,7 @@ const OpenMap: React.FC = () => {
 
     try {
       const endpoint = isTotem ? 'totems' : 'recepciones';
+      console.log('Eliminando punto:', { pointId, endpoint });
       await axios.delete(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
@@ -354,11 +422,21 @@ const OpenMap: React.FC = () => {
             return;
           } catch (retryError) {
             console.error('Error deleting point after refresh:', retryError);
+            setError('Error al eliminar el punto tras reautenticación.');
           }
         }
+      } else if (error.response?.status === 404) {
+        if (isTotem) {
+          setTotems(totems.filter(t => t.id !== pointId));
+        } else {
+          setReceptions(receptions.filter(r => r.id !== pointId));
+        }
+        handleCloseModal();
+        return;
       }
       console.error('Error deleting point:', error);
-      setError('No se pudo eliminar el punto.');
+      const errorMessage = error.response?.data?.detail || 'No se pudo eliminar el punto.';
+      setError(errorMessage);
     }
   };
 
@@ -370,27 +448,32 @@ const OpenMap: React.FC = () => {
     useMapEvents({
       click(e) {
         if (!['admin', 'superuser'].includes(role as string)) return;
-        const { lat, lng } = e.latlng;
         if (isCreatingPath) {
-          setCurrentPathPoints([...currentPathPoints, [lat, lng]]);
+          const { lat, lng } = e.latlng;
+          setCurrentPathPoints(prev => [...prev, [lat, lng]]);
         } else if (isCreatingTotem) {
+          const { lat, lng } = e.latlng;
           const newTotem: Omit<TotemQR, 'id'> = {
             latitude: lat,
             longitude: lng,
             name: 'Nuevo Totem QR',
             description: '',
-            imageUrl: '',
+            imageUrls: [],
             campus: campus || '',
+            status: 'Operativo',
           };
           saveTotem(newTotem);
         } else if (isCreatingReception) {
+          const { lat, lng } = e.latlng;
           const newReception: Omit<ReceptionQR, 'id'> = {
             latitude: lat,
             longitude: lng,
             name: 'Nuevo Espacio Seguro',
             description: '',
-            imageUrl: '',
+            imageUrls: [],
             campus: campus || '',
+            schedule: '',
+            status: 'Operativo',
           };
           saveReception(newReception);
         }
@@ -401,13 +484,14 @@ const OpenMap: React.FC = () => {
 
   const saveTotem = async (totem: Omit<TotemQR, 'id'>) => {
     try {
+      console.log('Creando tótem:', totem);
       const response = await axios.post('http://localhost:8000/api/totems/', totem, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      setTotems([...totems, response.data]);
+      setTotems([...totems, response.data as TotemQR]);
       setIsCreatingTotem(false);
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -420,28 +504,31 @@ const OpenMap: React.FC = () => {
                 Authorization: `Bearer ${newToken}`,
               },
             });
-            setTotems([...totems, response.data]);
+            setTotems([...totems, response.data as TotemQR]);
             setIsCreatingTotem(false);
             return;
           } catch (retryError) {
             console.error('Error creating totem after refresh:', retryError);
+            setError('Error al crear el tótem tras reautenticación.');
           }
         }
       }
-      console.error('Error:', error);
-      setError('No se pudo crear el tótem.');
+      console.error('Error creating totem:', error);
+      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo crear el tótem.';
+      setError(errorMessage);
     }
   };
 
   const saveReception = async (reception: Omit<ReceptionQR, 'id'>) => {
     try {
+      console.log('Creando recepción:', reception);
       const response = await axios.post('http://localhost:8000/api/recepciones/', reception, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      setReceptions([...receptions, response.data]);
+      setReceptions([...receptions, response.data as ReceptionQR]);
       setIsCreatingReception(false);
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -454,32 +541,44 @@ const OpenMap: React.FC = () => {
                 Authorization: `Bearer ${newToken}`,
               },
             });
-            setReceptions([...receptions, response.data]);
+            setReceptions([...receptions, response.data as ReceptionQR]);
             setIsCreatingReception(false);
             return;
           } catch (retryError) {
             console.error('Error creating reception after refresh:', retryError);
+            setError('Error al crear la recepción tras reautenticación.');
           }
         }
       }
-      console.error('Error:', error);
-      setError('No se pudo crear la recepción.');
+      console.error('Error creating reception:', error);
+      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo crear la recepción.';
+      setError(errorMessage);
     }
   };
 
   const savePath = async () => {
     if (currentPathPoints.length < 2) {
-      alert('El camino debe tener al menos dos puntos.');
+      setError('El camino debe tener al menos dos puntos.');
       return;
     }
     setIsConfirmModalOpen(true);
+    setPathSaved(false);
   };
 
   const confirmSavePath = async () => {
-    if (!['admin', 'superuser'].includes(role as string)) return;
+    if (!['admin', 'superuser'].includes(role as string)) {
+      setError('Solo administradores pueden guardar caminos.');
+      setIsConfirmModalOpen(false);
+      return;
+    }
     const trimmedName = pathName.trim();
     if (!trimmedName || trimmedName.length < 3) {
-      alert('Por favor, ingresa un nombre válido para el camino.');
+      setError('Por favor, ingresa un nombre válido para el camino (mínimo 3 caracteres).');
+      return;
+    }
+    if (currentPathPoints.length < 2) {
+      setError('El camino debe tener al menos dos puntos.');
+      setIsConfirmModalOpen(false);
       return;
     }
 
@@ -500,13 +599,13 @@ const OpenMap: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      setPaths([...paths, response.data]);
+      setPaths(prev => [...prev, response.data as Path]);
       setCurrentPathPoints([]);
       setIsCreatingPath(false);
-      setIsConfirmModalOpen(false);
+      setPathSaved(true);
       setPathName('');
-      alert('Camino guardado exitosamente.');
     } catch (error: any) {
+      console.error('Error saving path:', error);
       if (error.response?.status === 401) {
         const newToken = await refreshToken();
         if (newToken) {
@@ -517,23 +616,41 @@ const OpenMap: React.FC = () => {
                 Authorization: `Bearer ${newToken}`,
               },
             });
-            setPaths([...paths, response.data]);
+            setPaths(prev => [...prev, response.data as Path]);
             setCurrentPathPoints([]);
             setIsCreatingPath(false);
-            setIsConfirmModalOpen(false);
+            setPathSaved(true);
             setPathName('');
-            alert('Camino guardado exitosamente.');
             return;
           } catch (retryError) {
             console.error('Error saving path after refresh:', retryError);
+            setError('Error al guardar el camino tras reautenticación.');
           }
+        } else {
+          setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
         }
+      } else {
+        const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo guardar el camino.';
+        setError(errorMessage);
       }
-      console.error('Error:', error);
-      setError('No se pudo guardar el camino.');
       setIsConfirmModalOpen(false);
       setPathName('');
     }
+  };
+
+  const handleCloseConfirmModal = () => {
+    setIsConfirmModalOpen(false);
+    setPathName('');
+    setPathSaved(false);
+    setCurrentPathPoints([]);
+  };
+
+  const handleCreateAnotherPath = () => {
+    setPathSaved(false);
+    setPathName('');
+    setCurrentPathPoints([]);
+    setIsCreatingPath(true);
+    setIsConfirmModalOpen(false);
   };
 
   const toggleShowPaths = () => {
@@ -551,7 +668,6 @@ const OpenMap: React.FC = () => {
       fechaIncidente: '',
       lugarIncidente: '',
       descripcion: '',
-      anonimo: false,
       campus: campus || '',
     },
   });
@@ -580,11 +696,13 @@ const OpenMap: React.FC = () => {
             return;
           } catch (retryError) {
             console.error('Error submitting denuncia after refresh:', retryError);
+            setError('Error al enviar la denuncia tras reautenticación.');
           }
         }
       }
       console.error('Error enviando denuncia:', error);
-      setError('No se pudo enviar la denuncia.');
+      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo enviar la denuncia.';
+      setError(errorMessage);
     }
   };
 
@@ -666,6 +784,7 @@ const OpenMap: React.FC = () => {
                 <Marker
                   key={totem.id}
                   position={[totem.latitude, totem.longitude]}
+                  icon={totemIcon}
                   interactive={!isCreatingPath}
                   eventHandlers={{ click: () => !isCreatingPath && handlePointClick(totem) }}
                 >
@@ -676,6 +795,7 @@ const OpenMap: React.FC = () => {
                 <Marker
                   key={reception.id}
                   position={[reception.latitude, reception.longitude]}
+                  icon={receptionIcon}
                   interactive={!isCreatingPath}
                   eventHandlers={{ click: () => !isCreatingPath && handlePointClick(reception) }}
                 >
@@ -687,9 +807,6 @@ const OpenMap: React.FC = () => {
                 paths.map(path => (
                   <Polyline key={path.id} positions={path.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
                 ))}
-              {selectedPath && (
-                <Polyline positions={selectedPath.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
-              )}
               <ZoomControl position="topright" />
             </MapContainer>
           ) : (
@@ -722,8 +839,8 @@ const OpenMap: React.FC = () => {
             </Box>
           ) : (
             <Box component="form" onSubmit={form.handleSubmit(onSubmit)} className="openmap-form">
-              <Typography variant="h5" className="openmap-form-title">Formulario de Denuncia</Typography>
-              <Typography>Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género.</Typography>
+              <Typography variant="h5" className="openmap-form-title">Formulario de acogida</Typography>
+              <Typography>Complete el formulario para informar un incidente relacionado con violencia o discriminación de género.</Typography>
 
               <Box className="openmap-form-section">
                 <Typography variant="h6">Información Personal</Typography>
@@ -734,6 +851,7 @@ const OpenMap: React.FC = () => {
                   helperText={form.formState.errors.nombre?.message}
                   fullWidth
                   margin="normal"
+                  required
                 />
                 <TextField
                   label="Apellido"
@@ -742,6 +860,7 @@ const OpenMap: React.FC = () => {
                   helperText={form.formState.errors.apellido?.message}
                   fullWidth
                   margin="normal"
+                  required
                 />
                 <TextField
                   label="Correo Electrónico"
@@ -751,6 +870,7 @@ const OpenMap: React.FC = () => {
                   helperText={form.formState.errors.email?.message}
                   fullWidth
                   margin="normal"
+                  required
                 />
                 <TextField
                   label="Teléfono"
@@ -759,18 +879,8 @@ const OpenMap: React.FC = () => {
                   helperText={form.formState.errors.telefono?.message}
                   fullWidth
                   margin="normal"
+                  required
                 />
-                <FormControl component="fieldset" margin="normal">
-                  <RadioGroup
-                    row
-                    value={form.watch('anonimo') ? 'true' : 'false'}
-                    onChange={(e) => form.setValue('anonimo', e.target.value === 'true')}
-                  >
-                    <FormControlLabel value="false" control={<Radio />} label="Denuncia con datos personales" />
-                    <FormControlLabel value="true" control={<Radio />} label="Denuncia anónima" />
-                  </RadioGroup>
-                  <Typography variant="body2">Si elige denuncia anónima, sus datos personales no serán visibles.</Typography>
-                </FormControl>
               </Box>
 
               <Box className="openmap-form-section">
@@ -787,8 +897,7 @@ const OpenMap: React.FC = () => {
                     <MenuItem value="violencia_fisica">Violencia Física</MenuItem>
                     <MenuItem value="violencia_psicologica">Violencia Psicológica</MenuItem>
                     <MenuItem value="discriminacion">Discriminación de Género</MenuItem>
-                    <MenuItem value="acoso_laboral">Acoso Laboral</MenuItem>
-                    <MenuItem value="otro">Otro</MenuItem>
+                    <MenuItem value="No lo tengo claro, necesito orientación">Acoso Laboral</MenuItem>
                   </Select>
                   {form.formState.errors.tipoIncidente && (
                     <Typography color="error">{form.formState.errors.tipoIncidente.message}</Typography>
@@ -803,6 +912,7 @@ const OpenMap: React.FC = () => {
                   fullWidth
                   margin="normal"
                   InputLabelProps={{ shrink: true }}
+                  required
                 />
                 <TextField
                   label="Lugar del Incidente"
@@ -811,6 +921,7 @@ const OpenMap: React.FC = () => {
                   helperText={form.formState.errors.lugarIncidente?.message}
                   fullWidth
                   margin="normal"
+                  required
                 />
                 <TextField
                   label="Descripción del Incidente"
@@ -821,6 +932,7 @@ const OpenMap: React.FC = () => {
                   helperText={form.formState.errors.descripcion?.message || 'Incluya todos los detalles relevantes.'}
                   fullWidth
                   margin="normal"
+                  required
                 />
               </Box>
 
@@ -929,7 +1041,64 @@ const OpenMap: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSavePoint}
         onDelete={handleDeletePoint}
+        setImageFiles={setImageFiles}
       />
+
+      <Dialog open={isConfirmModalOpen} onClose={handleCloseConfirmModal}>
+        <DialogTitle>{pathSaved ? 'Camino Guardado' : 'Guardar Camino'}</DialogTitle>
+        <DialogContent>
+          {pathSaved ? (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="h6" color="success.main">
+                ¡Camino guardado exitosamente!
+              </Typography>
+              <Typography>
+                El camino "{pathName || 'Nuevo Camino'}" ha sido creado y añadido al mapa.
+              </Typography>
+            </Box>
+          ) : (
+            <TextField
+              fullWidth
+              label="Nombre del Camino"
+              value={pathName}
+              onChange={(e) => setPathName(e.target.value)}
+              margin="normal"
+              required
+              error={pathName.trim().length > 0 && pathName.trim().length < 3}
+              helperText={
+                pathName.trim().length > 0 && pathName.trim().length < 3
+                  ? 'El nombre debe tener al menos 3 caracteres.'
+                  : ''
+              }
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          {pathSaved ? (
+            <>
+              <Button onClick={handleCloseConfirmModal} color="primary">
+                Cerrar
+              </Button>
+              <Button onClick={handleCreateAnotherPath} color="primary" variant="contained">
+                Crear Otro Camino
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={handleCloseConfirmModal} color="secondary">
+                Cancelar
+              </Button>
+              <Button
+                onClick={confirmSavePath}
+                color="primary"
+                disabled={pathName.trim().length < 3 || currentPathPoints.length < 2}
+              >
+                Guardar
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

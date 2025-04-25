@@ -26,17 +26,17 @@ class PathSerializer(serializers.ModelSerializer):
 class TotemQRSerializer(serializers.ModelSerializer):
     class Meta:
         model = TotemQR
-        fields = ['id', 'latitude', 'longitude', 'name', 'description', 'imageUrl', 'campus']
+        fields = ['id', 'latitude', 'longitude', 'name', 'description', 'campus', 'status']
 
 class ReceptionQRSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReceptionQR
-        fields = ['id', 'latitude', 'longitude', 'name', 'description', 'imageUrl', 'campus']
+        fields = ['id', 'latitude', 'longitude', 'name', 'description', 'campus', 'schedule', 'status']
 
 class DenunciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Denuncia
-        fields = ['id', 'nombre', 'apellido', 'email', 'telefono', 'tipo_incidente', 'fecha_incidente', 'lugar_incidente', 'descripcion', 'anonimo', 'created_at', 'campus']
+        fields = '__all__'
 
 class UserProfileSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source='role')

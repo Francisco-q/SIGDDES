@@ -15,23 +15,26 @@ class UserProfile(models.Model):
         return f"{self.user.username} - {self.role}"
 
 class TotemQR(models.Model):
+    id = models.AutoField(primary_key=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
     name = models.CharField(max_length=255, default='Totem QR')
     description = models.TextField(blank=True, null=True)
-    imageUrl = models.URLField(max_length=500, blank=True, null=True)
     campus = models.CharField(max_length=255, blank=True, null=True)
-
+    status = models.CharField(max_length=20, choices=[('Operativo', 'Operativo'), ('No Operativo', 'No Operativo')], default='Operativo')
+    
     def __str__(self):
         return self.name
 
 class ReceptionQR(models.Model):
+    id = models.AutoField(primary_key=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
     name = models.CharField(max_length=255, default='Recepción QR')
     description = models.TextField(blank=True, null=True)
-    imageUrl = models.URLField(max_length=500, blank=True, null=True)
     campus = models.CharField(max_length=255, blank=True, null=True)
+    schedule = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=[('Operativo', 'Operativo'), ('No Operativo', 'No Operativo')], default='Operativo')
 
     def __str__(self):
         return f"{self.name} - {self.campus}"
@@ -61,9 +64,8 @@ class Denuncia(models.Model):
     fecha_incidente = models.DateField()
     lugar_incidente = models.CharField(max_length=255)
     descripcion = models.TextField()
-    anonimo = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
     campus = models.CharField(max_length=255, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Denuncia {self.id} - {self.tipo_incidente} - {self.campus}"

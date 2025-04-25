@@ -33,7 +33,7 @@ const denunciasRecientes = [
         tipo: 'Acoso Sexual',
         campus: 'Campus Colchagua',
         estado: 'Pendiente',
-        denunciante: 'Anónimo',
+        denunciante: 'Jorge González',
     },
     {
         id: 2,
@@ -57,7 +57,7 @@ const denunciasRecientes = [
         tipo: 'Acoso Laboral',
         campus: 'Campus Pehuenche',
         estado: 'Pendiente',
-        denunciante: 'Anónimo',
+        denunciante: 'Ana Torres',
     },
     {
         id: 5,
@@ -70,12 +70,11 @@ const denunciasRecientes = [
 ];
 
 const estadisticasPorTipo = [
-    { tipo: 'Acoso Sexual', cantidad: 18 },
-    { tipo: 'Discriminación de Género', cantidad: 12 },
-    { tipo: 'Violencia Psicológica', cantidad: 15 },
-    { tipo: 'Acoso Laboral', cantidad: 9 },
+    { tipo: 'Acoso Sexual', cantidad: 8 },
+    { tipo: 'Discriminación de Género', cantidad: 2 },
+    { tipo: 'Violencia Psicológica', cantidad: 5 },
     { tipo: 'Violencia Física', cantidad: 6 },
-    { tipo: 'Otro', cantidad: 5 },
+    { tipo: 'No lo tengo claro, necesito orientación', cantidad: 5 },
 ];
 
 // Datos de campus (se podrían mover a un archivo separado o pasar como props)

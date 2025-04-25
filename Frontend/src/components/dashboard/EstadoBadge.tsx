@@ -24,7 +24,7 @@ export default function EstadoBadge({ estado }: EstadoBadgeProps) {
         <Box
             sx={{
                 display: 'inline-block',
-                py: 0.5, // Padding vertical
+                py: 1, // Padding vertical
                 borderRadius: 1,
                 width: 100,
                 backgroundColor: color === 'error' ? 'red' : color === 'warning' ? 'orange' : 'green',

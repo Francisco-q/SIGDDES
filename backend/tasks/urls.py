@@ -9,7 +9,7 @@ router.register(r'caminos', PathViewSet)
 router.register(r'puntos', PointViewSet, basename='puntos')
 router.register(r'caminos', PathViewSet, basename='caminos')
 router.register(r'upload', ImageUploadViewSet, basename='upload')
-router.register(r'denuncias', DenunciaViewSet, basename='denuncia')
+router.register(r'denuncias', DenunciaViewSet, basename='denuncias')
 
 urlpatterns = [
     path('', home),

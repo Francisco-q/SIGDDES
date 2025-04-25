@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
-import SetView from './SetView';
+import SetView from '../open_map/SetView';
 
 interface TotemQR {
   id: number;
@@ -249,7 +249,6 @@ const OpenMap: React.FC = () => {
         {/* Renderizar puntos QR */}
         {totems.map(totem => (
           <Marker key={totem.id} position={[totem.latitude, totem.longitude]}>
-            <Popup>{totem.name}</Popup>
           </Marker>
         ))}
         {/* Renderizar recepciones */}

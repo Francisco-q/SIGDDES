@@ -18,8 +18,8 @@ class PathAdmin(admin.ModelAdmin):
 
 @admin.register(Denuncia)
 class DenunciaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tipo_incidente', 'campus', 'created_at', 'anonimo')
-    list_filter = ('tipo_incidente', 'campus', 'anonimo')
+    list_display = ('id', 'tipo_incidente', 'campus', 'created_at')
+    list_filter = ('tipo_incidente', 'campus')
     search_fields = ('descripcion', 'lugar_incidente')
 
 

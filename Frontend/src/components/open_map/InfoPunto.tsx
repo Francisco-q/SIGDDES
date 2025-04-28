@@ -19,7 +19,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
   onSave,
   onDelete,
 }) => {
-  const isTotem = punto && !('schedule' in punto);
+  const isTotem = !!punto && !('schedule' in punto);
   const isEditable = role === 'admin' || role === 'superuser'; // Solo admin o superuser pueden editar
 
   return (

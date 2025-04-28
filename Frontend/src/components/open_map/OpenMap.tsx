@@ -745,7 +745,7 @@ const OpenMap: React.FC = () => {
         className="openmap-tabs"
       >
         <Tab label="Mapa" />
-        <Tab label="Denuncia" />
+        <Tab label="Acogida" />
       </Tabs>
 
       {tabValue === 0 && (
@@ -824,8 +824,7 @@ const OpenMap: React.FC = () => {
         <Box className="openmap-form-container">
           {submitted ? (
             <Box sx={{ textAlign: 'center', mt: 10 }}>
-              <Typography variant="h5">Denuncia Enviada</Typography>
-              <Typography>Su denuncia ha sido recibida y será procesada a la brevedad.</Typography>
+              <Typography variant="h5">Formulario enviado exitosamente</Typography>
               <Button
                 variant="contained"
                 onClick={() => {
@@ -834,7 +833,7 @@ const OpenMap: React.FC = () => {
                 }}
                 className="openmap-form-button"
               >
-                Realizar otra denuncia
+                Realizar otra acción
               </Button>
             </Box>
           ) : (
@@ -937,7 +936,7 @@ const OpenMap: React.FC = () => {
               </Box>
 
               <Button type="submit" variant="contained" color="primary" className="openmap-form-button">
-                Enviar Denuncia
+                Enviar Formulario
               </Button>
             </Box>
           )}

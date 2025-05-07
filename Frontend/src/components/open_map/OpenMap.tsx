@@ -269,9 +269,8 @@ const OpenMap: React.FC = () => {
       return;
     }
 
-    // Determinar si es un tótem o una recepción
     const isTotem = !('schedule' in updatedPoint);
-    console.log('Guardando punto:', { isTotem, updatedPoint });
+    console.log('handleSavePoint - Guardando punto:', { isTotem, updatedPoint, imageFiles });
 
     try {
       let imageUrls = Array.isArray(updatedPoint.imageUrls) ? updatedPoint.imageUrls : [];
@@ -296,7 +295,6 @@ const OpenMap: React.FC = () => {
         imageUrls,
         description: updatedPoint.description || '',
         status: updatedPoint.status || 'Operativo',
-        // Incluir schedule solo para recepciones
         ...(isTotem ? {} : { schedule: (updatedPoint as ReceptionQR).schedule || '' }),
       };
 
@@ -320,61 +318,6 @@ const OpenMap: React.FC = () => {
 
       handleCloseModal();
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            let imageUrls = Array.isArray(updatedPoint.imageUrls) ? updatedPoint.imageUrls : [];
-            if (imageFiles.length > 0) {
-              const newImageUrls: string[] = [];
-              for (const file of imageFiles) {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('totem_id', updatedPoint.id.toString());
-                const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
-                  headers: {
-                    Authorization: `Bearer ${newToken}`,
-                  },
-                });
-                newImageUrls.push(response.data.imageUrl);
-              }
-              imageUrls = [...imageUrls, ...newImageUrls];
-            }
-
-            const pointData = {
-              ...updatedPoint,
-              imageUrls,
-              description: updatedPoint.description || '',
-              status: updatedPoint.status || 'Operativo',
-              ...(isTotem ? {} : { schedule: (updatedPoint as ReceptionQR).schedule || '' }),
-            };
-
-            const endpoint = isTotem ? 'totems' : 'recepciones';
-            console.log('Reintentando con nuevo token en endpoint:', endpoint, 'Datos:', pointData);
-
-            const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-
-            console.log('Respuesta del backend (reintento):', response.data);
-
-            if (isTotem) {
-              setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data as TotemQR : t)));
-            } else {
-              setReceptions(receptions.map(r => (r.id === updatedPoint.id ? response.data as ReceptionQR : r)));
-            }
-
-            handleCloseModal();
-            return;
-          } catch (retryError) {
-            console.error('Error saving point after refresh:', retryError);
-            setError('Error al guardar el punto tras reautenticación.');
-          }
-        }
-      }
       console.error('Error saving point:', error);
       const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo guardar el punto.';
       setError(errorMessage);
@@ -706,7 +649,7 @@ const OpenMap: React.FC = () => {
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -745,7 +688,7 @@ const OpenMap: React.FC = () => {
         className="openmap-tabs"
       >
         <Tab label="Mapa" />
-        <Tab label="Acogida" />
+        <Tab label="Denuncia" />
       </Tabs>
 
       {tabValue === 0 && (
@@ -824,7 +767,8 @@ const OpenMap: React.FC = () => {
         <Box className="openmap-form-container">
           {submitted ? (
             <Box sx={{ textAlign: 'center', mt: 10 }}>
-              <Typography variant="h5">Formulario enviado exitosamente</Typography>
+              <Typography variant="h5">Denuncia Enviada</Typography>
+              <Typography>Su denuncia ha sido recibida y será procesada a la brevedad.</Typography>
               <Button
                 variant="contained"
                 onClick={() => {
@@ -833,13 +777,13 @@ const OpenMap: React.FC = () => {
                 }}
                 className="openmap-form-button"
               >
-                Realizar otra acción
+                Realizar otra denuncia
               </Button>
             </Box>
           ) : (
             <Box component="form" onSubmit={form.handleSubmit(onSubmit)} className="openmap-form">
-              <Typography variant="h5" className="openmap-form-title">Formulario de acogida</Typography>
-              <Typography>Complete el formulario para informar un incidente relacionado con violencia o discriminación de género.</Typography>
+              <Typography variant="h5" className="openmap-form-title">Formulario de Denuncia</Typography>
+              <Typography>Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género.</Typography>
 
               <Box className="openmap-form-section">
                 <Typography variant="h6">Información Personal</Typography>
@@ -896,7 +840,8 @@ const OpenMap: React.FC = () => {
                     <MenuItem value="violencia_fisica">Violencia Física</MenuItem>
                     <MenuItem value="violencia_psicologica">Violencia Psicológica</MenuItem>
                     <MenuItem value="discriminacion">Discriminación de Género</MenuItem>
-                    <MenuItem value="No lo tengo claro, necesito orientación">Acoso Laboral</MenuItem>
+                    <MenuItem value="acoso_laboral">Acoso Laboral</MenuItem>
+                    <MenuItem value="otro">Otro</MenuItem>
                   </Select>
                   {form.formState.errors.tipoIncidente && (
                     <Typography color="error">{form.formState.errors.tipoIncidente.message}</Typography>
@@ -936,7 +881,7 @@ const OpenMap: React.FC = () => {
               </Box>
 
               <Button type="submit" variant="contained" color="primary" className="openmap-form-button">
-                Enviar Formulario
+                Enviar Denuncia
               </Button>
             </Box>
           )}

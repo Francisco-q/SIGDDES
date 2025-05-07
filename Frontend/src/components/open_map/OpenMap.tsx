@@ -83,6 +83,7 @@ const OpenMap: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
 
+
   const svgBounds: [[number, number], [number, number]] = [
     [51.505, -0.09],
     [51.51, -0.1],
@@ -240,6 +241,16 @@ const OpenMap: React.FC = () => {
     }
   }, [campus]);
 
+  useEffect(() => {
+    if (isCreatingPath && currentPathPoints.length > 1) {
+      if (!hasSafeSpace) {
+        setError('El camino debe conectarse a un Espacio Seguro antes de guardarlo.');
+      } else {
+        setError(null);
+      }
+    }
+  }, [currentPathPoints, isCreatingPath, receptions]);
+
   const handlePointClick = async (point: TotemQR | ReceptionQR) => {
     setSelectedPoint(point);
     setImageFiles([]);
@@ -393,6 +404,16 @@ const OpenMap: React.FC = () => {
         if (!['admin', 'superuser'].includes(role as string)) return;
         if (isCreatingPath) {
           const { lat, lng } = e.latlng;
+          // Verificar si es el primer punto y si coincide con un totem
+          if (currentPathPoints.length === 0) {
+            const totem = totems.find(t =>
+              Math.abs(t.latitude - lat) < 0.0001 && Math.abs(t.longitude - lng) < 0.0001
+            );
+            if (!totem) {
+              setError('El camino debe comenzar desde un Totem QR.');
+              return;
+            }
+          }
           setCurrentPathPoints(prev => [...prev, [lat, lng]]);
         } else if (isCreatingTotem) {
           const { lat, lng } = e.latlng;
@@ -498,7 +519,12 @@ const OpenMap: React.FC = () => {
       setError(errorMessage);
     }
   };
-
+  const otherPoints = currentPathPoints.slice(1);
+  const hasSafeSpace = otherPoints.some((point: [number, number]) =>
+    receptions.some(r =>
+      Math.abs(r.latitude - point[0]) < 0.0001 && Math.abs(r.longitude - point[1]) < 0.0001
+    )
+  );
   const savePath = async () => {
     if (currentPathPoints.length < 2) {
       setError('El camino debe tener al menos dos puntos.');
@@ -524,7 +550,13 @@ const OpenMap: React.FC = () => {
       setIsConfirmModalOpen(false);
       return;
     }
+    // Verificar que al menos un punto (después del primero) coincida con una recepción
 
+
+    if (!hasSafeSpace) {
+      setError('El camino debe conectarse al menos con un Espacio Seguro.');
+      return;
+    }
     const pathData = {
       name: trimmedName,
       points: currentPathPoints.map((point, index) => ({
@@ -542,7 +574,7 @@ const OpenMap: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      setPaths(prev => [...prev, response.data as Path]);
+      setPaths((prev: Path[]) => [...prev, response.data as Path]);
       setCurrentPathPoints([]);
       setIsCreatingPath(false);
       setPathSaved(true);
@@ -1035,7 +1067,7 @@ const OpenMap: React.FC = () => {
               <Button
                 onClick={confirmSavePath}
                 color="primary"
-                disabled={pathName.trim().length < 3 || currentPathPoints.length < 2}
+                disabled={pathName.trim().length < 3 || currentPathPoints.length < 2 || !hasSafeSpace}
               >
                 Guardar
               </Button>

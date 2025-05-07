@@ -30,6 +30,6 @@ export interface PathPoint {
 export interface Path {
   id: number;
   name: string;
-  points: PathPoint[];
+  points: { latitude: number; longitude: number }[];
   campus: string;
 }

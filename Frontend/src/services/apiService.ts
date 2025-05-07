@@ -26,5 +26,13 @@ export const fetchPaths = async (campus: string): Promise<Path[]> => {
       Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
   });
-  return response.data;
+  return response.data.map((path: any) => ({
+    id: path.id,
+    name: path.name,
+    points: path.points.map((point: any) => ({
+      latitude: point.latitude,
+      longitude: point.longitude,
+    })),
+    campus: path.campus,
+  }));
 };

@@ -1,4 +1,3 @@
-// DashboardDenuncias.tsx
 import {
     Description as FileTextIcon,
     Menu as MenuIcon,
@@ -20,85 +19,77 @@ import {
     Typography
 } from '@mui/material';
 import MuiBadge from '@mui/material/Badge';
+import axios from 'axios';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import EstadoBadge from './EstadoBadge';
 
-// Datos de ejemplo
-const denunciasRecientes = [
-    {
-        id: 1,
-        fecha: new Date(2023, 3, 15),
-        tipo: 'Acoso Sexual',
-        campus: 'Campus Colchagua',
-        estado: 'Pendiente',
-        denunciante: 'Jorge González',
-    },
-    {
-        id: 2,
-        fecha: new Date(2023, 3, 12),
-        tipo: 'Discriminación de Género',
-        campus: 'Campus Talca',
-        estado: 'En Proceso',
-        denunciante: 'María López',
-    },
-    {
-        id: 3,
-        fecha: new Date(2023, 3, 10),
-        tipo: 'Violencia Psicológica',
-        campus: 'Campus Curico',
-        estado: 'Resuelto',
-        denunciante: 'Juan Pérez',
-    },
-    {
-        id: 4,
-        fecha: new Date(2023, 3, 8),
-        tipo: 'Acoso Laboral',
-        campus: 'Campus Pehuenche',
-        estado: 'Pendiente',
-        denunciante: 'Ana Torres',
-    },
-    {
-        id: 5,
-        fecha: new Date(2023, 3, 5),
-        tipo: 'Violencia Física',
-        campus: 'Campus Linares',
-        estado: 'Resuelto',
-        denunciante: 'Carlos Rodríguez',
-    },
-];
-
-const estadisticasPorTipo = [
-    { tipo: 'Acoso Sexual', cantidad: 8 },
-    { tipo: 'Discriminación de Género', cantidad: 2 },
-    { tipo: 'Violencia Psicológica', cantidad: 5 },
-    { tipo: 'Violencia Física', cantidad: 6 },
-    { tipo: 'No lo tengo claro, necesito orientación', cantidad: 5 },
-];
-
-// Datos de campus (se podrían mover a un archivo separado o pasar como props)
-const campusUniversitarios = [
-    { id: 1, nombre: 'Campus Talca', denuncias: 24 },
-    { id: 2, nombre: 'Campus Curico', denuncias: 12 },
-    { id: 3, nombre: 'Campus Linares', denuncias: 8 },
-    { id: 4, nombre: 'Campus Santiago', denuncias: 15 },
-    { id: 5, nombre: 'Campus Pehuenche', denuncias: 6 },
-    { id: 6, nombre: 'Campus Colchagua', denuncias: 6 },
-];
+interface Denuncia {
+    id: number;
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+    tipo_incidente: string;
+    fecha_incidente: string;
+    lugar_incidente: string;
+    descripcion: string;
+    created_at: string;
+    campus: string;
+}
 
 export default function DashboardDenuncias() {
     const [campusSeleccionado, setCampusSeleccionado] = useState<string>('todos');
+    const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get('http://localhost:8000/api/denuncias/', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setDenuncias(response.data);
+                setLoading(false);
+            } catch (err) {
+                setError('Error al cargar los datos');
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const denunciasFiltradas =
         campusSeleccionado === 'todos'
-            ? denunciasRecientes
-            : denunciasRecientes.filter((d) => d.campus === campusSeleccionado);
+            ? denuncias
+            : denuncias.filter((d) => d.campus === campusSeleccionado);
 
-    const pendientes = denunciasRecientes.filter((d) => d.estado === 'Pendiente').length;
-    const enProceso = denunciasRecientes.filter((d) => d.estado === 'En Proceso').length;
-    const resueltas = denunciasRecientes.filter((d) => d.estado === 'Resuelto').length;
+    const pendientes = denuncias.filter((d) => d.tipo_incidente === 'Pendiente').length;
+    const enProceso = denuncias.filter((d) => d.tipo_incidente === 'En Proceso').length;
+    const resueltas = denuncias.filter((d) => d.tipo_incidente === 'Resuelto').length;
+
+    const estadisticas = Object.entries(
+        denuncias.reduce((acc, denuncia) => {
+            acc[denuncia.tipo_incidente] = (acc[denuncia.tipo_incidente] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>)
+    ).map(([tipo, cantidad]) => ({ tipo, cantidad }));
+
+    const campusList = Array.from(
+        new Set(denuncias.map((d) => d.campus))
+    ).map((nombre, id) => ({ id: id + 1, nombre, denuncias: denuncias.filter(d => d.campus === nombre).length }));
+
+    if (loading) {
+        return <Typography>Cargando datos...</Typography>;
+    }
+
+    if (error) {
+        return <Typography color="error">{error}</Typography>;
+    }
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -141,9 +132,9 @@ export default function DashboardDenuncias() {
                             titleTypographyProps={{ variant: 'subtitle2' }}
                         />
                         <CardContent>
-                            <Typography variant="h5">{denunciasRecientes.length}</Typography>
+                            <Typography variant="h5">{denuncias.length}</Typography>
                             <Typography variant="caption" color="textSecondary">
-                                5 registradas este mes
+                                {denuncias.filter(d => new Date(d.created_at).getMonth() === new Date().getMonth()).length} registradas este mes
                             </Typography>
                         </CardContent>
                     </Card>
@@ -201,7 +192,7 @@ export default function DashboardDenuncias() {
                                         onChange={(e) => setCampusSeleccionado(e.target.value as string)}
                                     >
                                         <MenuItem value="todos">Todos los campus</MenuItem>
-                                        {campusUniversitarios.map((campus) => (
+                                        {campusList.map((campus) => (
                                             <MenuItem key={campus.id} value={campus.nombre}>
                                                 {campus.nombre}
                                             </MenuItem>
@@ -220,13 +211,13 @@ export default function DashboardDenuncias() {
                             </Box>
                             {denunciasFiltradas.map((denuncia) => (
                                 <Box key={denuncia.id} sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1, alignItems: 'center', mb: 1 }}>
-                                    <Typography variant="body2">{format(denuncia.fecha, 'dd MMM yyyy', { locale: es })}</Typography>
-                                    <Typography variant="body2">{denuncia.tipo}</Typography>
+                                    <Typography variant="body2">{format(new Date(denuncia.created_at), 'dd MMM yyyy', { locale: es })}</Typography>
+                                    <Typography variant="body2">{denuncia.tipo_incidente}</Typography>
                                     <Typography variant="body2">{denuncia.campus}</Typography>
                                     <Box sx={{ display: 'flex', justifyContent: 'left', paddingLeft: 3, alignItems: 'center' }}>
-                                        <EstadoBadge estado={denuncia.estado} />
+                                        <EstadoBadge estado={denuncia.tipo_incidente} />
                                     </Box>
-                                    <Typography variant="body2">{denuncia.denunciante}</Typography>
+                                    <Typography variant="body2">{`${denuncia.nombre} ${denuncia.apellido}`}</Typography>
                                 </Box>
                             ))}
                             {denunciasFiltradas.length === 0 && (
@@ -246,11 +237,11 @@ export default function DashboardDenuncias() {
                             subheader="Distribución de denuncias según su categoría"
                         />
                         <CardContent>
-                            {estadisticasPorTipo.map((stat) => (
+                            {estadisticas.map((stat) => (
                                 <Box key={stat.tipo} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                     <Typography sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{stat.tipo}</Typography>
                                     <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.300', borderRadius: 4, overflow: 'hidden', mx: 2 }}>
-                                        <Box sx={{ width: `${(stat.cantidad / 65) * 100}%`, height: '100%', bgcolor: 'rose.600' }} />
+                                        <Box sx={{ width: `${(stat.cantidad / Math.max(...estadisticas.map(s => s.cantidad))) * 100}%`, height: '100%', bgcolor: 'rose.600' }} />
                                     </Box>
                                     <Typography sx={{ width: 40, textAlign: 'right' }}>{stat.cantidad}</Typography>
                                 </Box>

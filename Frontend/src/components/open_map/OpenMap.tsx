@@ -42,7 +42,7 @@ import SetView from './SetView';
 
 // Definir íconos personalizados
 const totemIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', // Ícono azul
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -51,7 +51,7 @@ const totemIcon = new L.Icon({
 });
 
 const receptionIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', // Ícono rojo
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -65,9 +65,9 @@ const formSchema = z.object({
   apellido: z.string().min(2, { message: 'El apellido debe tener al menos 2 caracteres.' }),
   email: z.string().email({ message: 'Por favor ingrese un email válido.' }),
   telefono: z.string().min(8, { message: 'Por favor ingrese un número de teléfono válido.' }),
-  tipoIncidente: z.string({ required_error: 'Por favor seleccione un tipo de incidente.' }),
-  fechaIncidente: z.string({ required_error: 'Por favor ingrese la fecha del incidente.' }),
-  lugarIncidente: z.string().min(2, { message: 'Por favor ingrese el lugar del incidente.' }),
+  tipo_incidente: z.string({ required_error: 'Por favor seleccione un tipo de incidente.' }),
+  fecha_incidente: z.string({ required_error: 'Por favor ingrese la fecha del incidente.' }).regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha debe estar en formato YYYY-MM-DD.' }),
+  lugar_incidente: z.string().min(2, { message: 'Por favor ingrese el lugar del incidente.' }),
   descripcion: z.string().min(10, { message: 'La descripción debe tener al menos 10 caracteres.' }),
   campus: z.string().optional(),
 });
@@ -82,7 +82,7 @@ const OpenMap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
-
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const svgBounds: [[number, number], [number, number]] = [
     [51.505, -0.09],
@@ -266,7 +266,6 @@ const OpenMap: React.FC = () => {
   const handleSavePoint = async (updatedPoint: TotemQR | ReceptionQR) => {
     if (!updatedPoint || !['admin', 'superuser'].includes(role as string)) return;
 
-    // Validar campos requeridos
     if (!updatedPoint.name || updatedPoint.name.trim().length < 2) {
       setError('El nombre del punto es requerido y debe tener al menos 2 caracteres.');
       return;
@@ -404,7 +403,6 @@ const OpenMap: React.FC = () => {
         if (!['admin', 'superuser'].includes(role as string)) return;
         if (isCreatingPath) {
           const { lat, lng } = e.latlng;
-          // Verificar si es el primer punto y si coincide con un totem
           if (currentPathPoints.length === 0) {
             const totem = totems.find(t =>
               Math.abs(t.latitude - lat) < 0.0001 && Math.abs(t.longitude - lng) < 0.0001
@@ -519,12 +517,14 @@ const OpenMap: React.FC = () => {
       setError(errorMessage);
     }
   };
+
   const otherPoints = currentPathPoints.slice(1);
   const hasSafeSpace = otherPoints.some((point: [number, number]) =>
     receptions.some(r =>
       Math.abs(r.latitude - point[0]) < 0.0001 && Math.abs(r.longitude - point[1]) < 0.0001
     )
   );
+
   const savePath = async () => {
     if (currentPathPoints.length < 2) {
       setError('El camino debe tener al menos dos puntos.');
@@ -550,9 +550,6 @@ const OpenMap: React.FC = () => {
       setIsConfirmModalOpen(false);
       return;
     }
-    // Verificar que al menos un punto (después del primero) coincida con una recepción
-
-
     if (!hasSafeSpace) {
       setError('El camino debe conectarse al menos con un Espacio Seguro.');
       return;
@@ -639,45 +636,38 @@ const OpenMap: React.FC = () => {
       apellido: '',
       email: '',
       telefono: '',
-      tipoIncidente: '',
-      fechaIncidente: '',
-      lugarIncidente: '',
+      tipo_incidente: '',
+      fecha_incidente: '',
+      lugar_incidente: '',
       descripcion: '',
       campus: campus || '',
     },
   });
 
   const onSubmit = async (data: FormData) => {
+    setFormErrors({});
     try {
-      await axios.post('http://localhost:8000/api/denuncias/', { ...data, campus }, {
+      console.log('Datos enviados:', data);
+      const response = await axios.post('http://localhost:8000/api/denuncias/', data, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
+      console.log('Respuesta del servidor:', response.data);
       setSubmitted(true);
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            await axios.post('http://localhost:8000/api/denuncias/', { ...data, campus }, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            setSubmitted(true);
-            return;
-          } catch (retryError) {
-            console.error('Error submitting denuncia after refresh:', retryError);
-            setError('Error al enviar la denuncia tras reautenticación.');
-          }
+      if (error.response) {
+        const serverErrors = error.response.data;
+        console.error('Errores del servidor:', serverErrors);
+        if (serverErrors && typeof serverErrors === 'object') {
+          setFormErrors(serverErrors);
+        } else {
+          setError('Error al enviar la denuncia: ' + error.response.data.detail);
         }
+      } else {
+        setError('Error al enviar la denuncia: ' + error.message);
       }
-      console.error('Error enviando denuncia:', error);
-      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo enviar la denuncia.';
-      setError(errorMessage);
     }
   };
 
@@ -822,8 +812,8 @@ const OpenMap: React.FC = () => {
                 <TextField
                   label="Nombre"
                   {...form.register('nombre')}
-                  error={!!form.formState.errors.nombre}
-                  helperText={form.formState.errors.nombre?.message}
+                  error={!!form.formState.errors.nombre || !!formErrors.nombre}
+                  helperText={form.formState.errors.nombre?.message || formErrors.nombre}
                   fullWidth
                   margin="normal"
                   required
@@ -831,8 +821,8 @@ const OpenMap: React.FC = () => {
                 <TextField
                   label="Apellido"
                   {...form.register('apellido')}
-                  error={!!form.formState.errors.apellido}
-                  helperText={form.formState.errors.apellido?.message}
+                  error={!!form.formState.errors.apellido || !!formErrors.apellido}
+                  helperText={form.formState.errors.apellido?.message || formErrors.apellido}
                   fullWidth
                   margin="normal"
                   required
@@ -841,8 +831,8 @@ const OpenMap: React.FC = () => {
                   label="Correo Electrónico"
                   type="email"
                   {...form.register('email')}
-                  error={!!form.formState.errors.email}
-                  helperText={form.formState.errors.email?.message}
+                  error={!!form.formState.errors.email || !!formErrors.email}
+                  helperText={form.formState.errors.email?.message || formErrors.email}
                   fullWidth
                   margin="normal"
                   required
@@ -850,8 +840,8 @@ const OpenMap: React.FC = () => {
                 <TextField
                   label="Teléfono"
                   {...form.register('telefono')}
-                  error={!!form.formState.errors.telefono}
-                  helperText={form.formState.errors.telefono?.message}
+                  error={!!form.formState.errors.telefono || !!formErrors.telefono}
+                  helperText={form.formState.errors.telefono?.message || formErrors.telefono}
                   fullWidth
                   margin="normal"
                   required
@@ -860,12 +850,12 @@ const OpenMap: React.FC = () => {
 
               <Box className="openmap-form-section">
                 <Typography variant="h6">Detalles del Incidente</Typography>
-                <FormControl fullWidth margin="normal" error={!!form.formState.errors.tipoIncidente}>
+                <FormControl fullWidth margin="normal" error={!!form.formState.errors.tipo_incidente || !!formErrors.tipo_incidente}>
                   <InputLabel>Tipo de Incidente</InputLabel>
                   <Select
-                    {...form.register('tipoIncidente')}
-                    value={form.watch('tipoIncidente')}
-                    onChange={(e) => form.setValue('tipoIncidente', e.target.value as string)}
+                    {...form.register('tipo_incidente')}
+                    value={form.watch('tipo_incidente')}
+                    onChange={(e) => form.setValue('tipo_incidente', e.target.value as string)}
                   >
                     <MenuItem value="">Seleccione el tipo de incidente</MenuItem>
                     <MenuItem value="acoso_sexual">Acoso Sexual</MenuItem>
@@ -875,16 +865,16 @@ const OpenMap: React.FC = () => {
                     <MenuItem value="acoso_laboral">Acoso Laboral</MenuItem>
                     <MenuItem value="otro">Otro</MenuItem>
                   </Select>
-                  {form.formState.errors.tipoIncidente && (
-                    <Typography color="error">{form.formState.errors.tipoIncidente.message}</Typography>
+                  {(form.formState.errors.tipo_incidente || formErrors.tipo_incidente) && (
+                    <Typography color="error">{form.formState.errors.tipo_incidente?.message || formErrors.tipo_incidente}</Typography>
                   )}
                 </FormControl>
                 <TextField
                   label="Fecha del Incidente"
                   type="date"
-                  {...form.register('fechaIncidente')}
-                  error={!!form.formState.errors.fechaIncidente}
-                  helperText={form.formState.errors.fechaIncidente?.message}
+                  {...form.register('fecha_incidente')}
+                  error={!!form.formState.errors.fecha_incidente || !!formErrors.fecha_incidente}
+                  helperText={form.formState.errors.fecha_incidente?.message || formErrors.fecha_incidente}
                   fullWidth
                   margin="normal"
                   InputLabelProps={{ shrink: true }}
@@ -892,9 +882,9 @@ const OpenMap: React.FC = () => {
                 />
                 <TextField
                   label="Lugar del Incidente"
-                  {...form.register('lugarIncidente')}
-                  error={!!form.formState.errors.lugarIncidente}
-                  helperText={form.formState.errors.lugarIncidente?.message}
+                  {...form.register('lugar_incidente')}
+                  error={!!form.formState.errors.lugar_incidente || !!formErrors.lugar_incidente}
+                  helperText={form.formState.errors.lugar_incidente?.message || formErrors.lugar_incidente}
                   fullWidth
                   margin="normal"
                   required
@@ -904,8 +894,8 @@ const OpenMap: React.FC = () => {
                   multiline
                   rows={4}
                   {...form.register('descripcion')}
-                  error={!!form.formState.errors.descripcion}
-                  helperText={form.formState.errors.descripcion?.message || 'Incluya todos los detalles relevantes.'}
+                  error={!!form.formState.errors.descripcion || !!formErrors.descripcion}
+                  helperText={form.formState.errors.descripcion?.message || formErrors.descripcion || 'Incluya todos los detalles relevantes.'}
                   fullWidth
                   margin="normal"
                   required

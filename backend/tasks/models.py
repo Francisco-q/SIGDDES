@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
+from django.conf import settings
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -70,7 +71,16 @@ class Denuncia(models.Model):
     def __str__(self):
         return f"Denuncia {self.id} - {self.tipo_incidente} - {self.campus}"
 
+class ImageUpload(models.Model):
+    point_id = models.IntegerField()  # ID del TotemQR o ReceptionQR
+    point_type = models.CharField(max_length=20, choices=[('totem', 'Totem'), ('reception', 'Reception')])  # Tipo de punto
+    campus = models.CharField(max_length=50)  # Campus al que pertenece
+    image = models.ImageField(upload_to='images/points/')  # Ruta donde se guarda la imagen
+    uploaded_at = models.DateTimeField(auto_now_add=True)  # Fecha de subida
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)  # Usuario que sube (opcional)
 
+    def __str__(self):
+        return f"{self.point_type} {self.point_id} - {self.image.name}"
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

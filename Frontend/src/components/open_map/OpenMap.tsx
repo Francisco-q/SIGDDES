@@ -31,7 +31,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
+import { ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { fetchPaths, fetchReceptions, fetchTotems } from '../../services/apiService';
@@ -45,7 +45,6 @@ const totemIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   shadowSize: [41, 41],
 });
@@ -54,7 +53,6 @@ const receptionIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   shadowSize: [41, 41],
 });
@@ -288,14 +286,24 @@ const OpenMap: React.FC = () => {
         const newImageUrls: string[] = [];
         for (const file of imageFiles) {
           const formData = new FormData();
-          formData.append('file', file);
-          formData.append('totem_id', updatedPoint.id.toString());
+          formData.append('file', file); // Campo para el archivo
+          formData.append('point_id', updatedPoint.id.toString()); // Corregido de totem_id a point_id
+          formData.append('point_type', isTotem ? 'totem' : 'reception'); // Tipo de punto
+          formData.append('campus', updatedPoint.campus); // Campus
+          console.log('Enviando solicitud a /api/image-upload/ con:', {
+            file: file.name,
+            point_id: updatedPoint.id,
+            point_type: isTotem ? 'totem' : 'reception',
+            campus: updatedPoint.campus,
+          });
           const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+              'Content-Type': 'multipart/form-data', // Añadido
             },
           });
-          newImageUrls.push(response.data.imageUrl);
+          console.log('Respuesta de /api/image-upload/:', response.data);
+          newImageUrls.push(response.data.image); // Ajustado a response.data.image según el serializador
         }
         imageUrls = [...imageUrls, ...newImageUrls];
       }
@@ -328,7 +336,7 @@ const OpenMap: React.FC = () => {
 
       handleCloseModal();
     } catch (error: any) {
-      console.error('Error saving point:', error);
+      console.error('Error saving point:', error.response ? error.response.data : error.message);
       const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo guardar el punto.';
       setError(errorMessage);
     }
@@ -753,7 +761,6 @@ const OpenMap: React.FC = () => {
                   interactive={!isCreatingPath}
                   eventHandlers={{ click: () => !isCreatingPath && handlePointClick(totem) }}
                 >
-                  <Popup>{totem.name}</Popup>
                 </Marker>
               ))}
               {receptions.map(reception => (
@@ -764,7 +771,6 @@ const OpenMap: React.FC = () => {
                   interactive={!isCreatingPath}
                   eventHandlers={{ click: () => !isCreatingPath && handlePointClick(reception) }}
                 >
-                  <Popup>{reception.name}</Popup>
                 </Marker>
               ))}
               {currentPathPoints.length > 1 && <Polyline positions={currentPathPoints} color="red" weight={5} />}

@@ -1,13 +1,16 @@
 from django.http import HttpResponse
-from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import permissions, status
-from .models import TotemQR, ReceptionQR, Path, PathPoint, UserProfile, Denuncia
-from .serializers import TotemQRSerializer, ReceptionQRSerializer, PathSerializer, DenunciaSerializer, UserProfileSerializer
+from rest_framework.views import APIView
+from rest_framework import permissions, status, viewsets
+from .models import TotemQR, ReceptionQR, Path, PathPoint, UserProfile, Denuncia, ImageUpload
+from .serializers import TotemQRSerializer, ReceptionQRSerializer, PathSerializer, DenunciaSerializer, UserProfileSerializer,ImageUploadSerializer
 from .permissions import RoleBasedPermission
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import default_storage
+from django.conf import settings
+from rest_framework.permissions import IsAuthenticated
+from .permissions import RoleBasedPermission
 import math
 
 def home(request):
@@ -46,27 +49,6 @@ class TotemQRViewSet(viewsets.ModelViewSet):
         serializer = PathSerializer(data=path)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
-
-class ImageUploadViewSet(viewsets.ViewSet):
-    parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [RoleBasedPermission]
-
-    def create(self, request, *args, **kwargs):
-        if request.user.userprofile.role != 'admin':
-            return Response({'error': 'Solo administradores pueden subir imágenes'}, status=403)
-
-        file = request.FILES['file']
-        file_name = default_storage.save(file.name, file)
-        file_url = request.build_absolute_uri(f'/media/{file_name}')
-        totem_id = request.data.get('totem_id')
-        if totem_id:
-            try:
-                totem = TotemQR.objects.get(id=totem_id)
-                totem.imageUrl = file_url
-                totem.save()
-            except TotemQR.DoesNotExist:
-                return Response({'error': 'TotemQR no encontrado'}, status=404)
-        return Response({'imageUrl': file_url})
 
 class ReceptionQRViewSet(viewsets.ModelViewSet):
     serializer_class = ReceptionQRSerializer
@@ -115,3 +97,44 @@ class DenunciaViewSet(viewsets.ModelViewSet):
     queryset = Denuncia.objects.all()
     serializer_class = DenunciaSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+class ImageUploadView(APIView):
+    permission_classes = [RoleBasedPermission]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        if request.method not in permissions.SAFE_METHODS:  # Solo aplica para POST
+            if not request.user.is_authenticated or request.user.userprofile.role != 'admin':
+                return Response({'detail': 'Solo administradores pueden subir imágenes.'}, status=status.HTTP_403_FORBIDDEN)
+
+        point_id = request.POST.get('point_id')
+        point_type = request.POST.get('point_type')
+        campus = request.POST.get('campus')
+
+        if not all([point_id, point_type, campus]):
+            return Response({'detail': 'Faltan parámetros requeridos (point_id, point_type, campus).'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if point_type not in ['totem', 'reception']:
+            return Response({'detail': 'Tipo de punto inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if point_type == 'totem' and not TotemQR.objects.filter(id=point_id, campus=campus).exists():
+            return Response({'detail': 'TotemQR no encontrado o no pertenece a este campus.'}, status=status.HTTP_404_NOT_FOUND)
+        if point_type == 'reception' and not ReceptionQR.objects.filter(id=point_id, campus=campus).exists():
+            return Response({'detail': 'ReceptionQR no encontrado o no pertenece a este campus.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not request.FILES.get('file'):
+            return Response({'detail': 'No se proporcionó un archivo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_obj = request.FILES['file']
+        file_path = default_storage.save(f'images/points/{campus}/{point_id}_{file_obj.name}', file_obj)
+        full_url = request.build_absolute_uri(default_storage.url(file_path))
+
+        image_upload = ImageUpload.objects.create(
+            point_id=point_id,
+            point_type=point_type,
+            campus=campus,
+            image=file_path
+        )
+
+        serializer = ImageUploadSerializer(image_upload, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

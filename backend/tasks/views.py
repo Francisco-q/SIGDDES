@@ -138,3 +138,30 @@ class ImageUploadView(APIView):
 
         serializer = ImageUploadSerializer(image_upload, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ImageListView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request, *args, **kwargs):
+        point_id = request.query_params.get('point_id')
+        point_type = request.query_params.get('point_type')
+        campus = request.query_params.get('campus')
+
+        if not all([point_id, point_type, campus]):
+            return Response({'detail': 'Faltan parámetros requeridos (point_id, point_type, campus).'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if point_type not in ['totem', 'reception']:
+            return Response({'detail': 'Tipo de punto inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validar que el point_id existe
+        if point_type == 'totem' and not TotemQR.objects.filter(id=point_id, campus=campus).exists():
+            return Response({'detail': 'TotemQR no encontrado o no pertenece a este campus.'}, status=status.HTTP_404_NOT_FOUND)
+        if point_type == 'reception' and not ReceptionQR.objects.filter(id=point_id, campus=campus).exists():
+            return Response({'detail': 'ReceptionQR no encontrado o no pertenece a este campus.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener las imágenes asociadas
+        images = ImageUpload.objects.filter(point_id=point_id, point_type=point_type, campus=campus)
+        serializer = ImageUploadSerializer(images, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)

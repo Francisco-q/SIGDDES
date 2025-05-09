@@ -1,3 +1,4 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Box,
   Button,
@@ -5,13 +6,16 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  MenuItem,
   TextField,
   Typography,
-  MenuItem,
-  IconButton,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick-theme.css';
+import 'slick-carousel/slick/slick.css';
 import { ReceptionQR, TotemQR } from '../../types/types';
 
 interface InfoPuntoProps {
@@ -40,23 +44,47 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
   const [status, setStatus] = useState('Operativo');
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [isDeleting, setIsDeleting] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [openImageModal, setOpenImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const isTotem = !!punto && !('schedule' in punto);
   const isEditable = role === 'admin' || role === 'superuser';
 
-  // Sincronizar estados cuando cambia el punto
   useEffect(() => {
-    if (punto) {
+    if (punto && open) {
       setName(punto.name);
       setDescription(punto.description || '');
       setSchedule(('schedule' in punto) ? (punto as ReceptionQR).schedule || '' : '');
       setStatus(punto.status || 'Operativo');
       setErrors({});
       setIsEditing(false);
+      fetchImages();
     }
-  }, [punto]);
+  }, [punto, open]);
 
-  // Validación de campos
+  const fetchImages = async () => {
+    if (!punto) return;
+    try {
+      const response = await axios.get(`http://localhost:8000/api/images/`, {
+        params: {
+          point_id: punto.id,
+          point_type: isTotem ? 'totem' : 'reception',
+          campus: punto.campus,
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+      const fetchedImages = response.data.map((img: any) => img.image);
+      setImages(fetchedImages);
+      console.log('Imágenes cargadas del backend:', fetchedImages);
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    }
+  };
+
   const validate = () => {
     const newErrors: { name?: string } = {};
     if (!name || name.trim().length < 2) {
@@ -66,8 +94,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Manejar guardado
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!punto || !validate()) return;
 
     const updatedPoint = {
@@ -76,14 +103,16 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
       description: description.trim(),
       status,
       ...(isTotem ? {} : { schedule: schedule.trim() }),
+      imageUrls: images,
     };
 
-    console.log('Guardando punto:', updatedPoint); // Log para depuración
     onSave(updatedPoint);
+    setImageFiles(Array.from((document.querySelectorAll('input[type="file"]')[0] as HTMLInputElement)?.files || []));
+    await fetchImages();
+    setNewImagePreviews([]);
     setIsEditing(false);
   };
 
-  // Manejar cancelar edición
   const handleCancel = () => {
     if (punto) {
       setName(punto.name);
@@ -91,23 +120,25 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
       setSchedule(('schedule' in punto) ? (punto as ReceptionQR).schedule || '' : '');
       setStatus(punto.status || 'Operativo');
       setErrors({});
+      setNewImagePreviews([]);
     }
     setIsEditing(false);
   };
 
-  // Manejar eliminación
   const handleDelete = () => {
     if (punto) {
       setIsDeleting(true);
-      console.log('Eliminando punto:', { id: punto.id, isTotem }); // Log para depuración
       onDelete(punto.id, isTotem);
     }
   };
 
-  // Manejar carga de imágenes
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      setImageFiles(Array.from(event.target.files));
+      const files = Array.from(event.target.files);
+      setImageFiles(files);
+      const previews = files.map(file => URL.createObjectURL(file));
+      setNewImagePreviews(previews);
+      console.log('Previsualizaciones generadas:', previews);
     }
   };
 
@@ -152,9 +183,64 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
         }}
       >
         {punto ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {isEditing ? (
               <>
+                {images.length > 0 ? (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
+                      Imágenes existentes:
+                    </Typography>
+                    <Slider dots={true} infinite={true} speed={500} slidesToShow={1} slidesToScroll={1}>
+                      {images.map((url, index) => (
+                        <Box key={url || `image-${index}`} sx={{ display: 'flex', justifyContent: 'center' }}>
+                          <img
+                            src={url}
+                            alt={`Imagen existente ${index + 1}`}
+                            style={{ maxWidth: '100%', maxHeight: '300px', objectFit: 'contain' }}
+                            onClick={() => {
+                              setSelectedImage(url);
+                              setOpenImageModal(true);
+                            }}
+                          />
+                        </Box>
+                      ))}
+                    </Slider>
+                  </Box>
+                ) : (
+                  <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+                    No hay imágenes disponibles
+                  </Typography>
+                )}
+                {newImagePreviews.length > 0 ? (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
+                      Nuevas imágenes:
+                    </Typography>
+                    <Slider dots={true} infinite={true} speed={500} slidesToShow={1} slidesToScroll={1}>
+                      {newImagePreviews.map((preview, index) => (
+                        <Box key={preview || `preview-${index}`} sx={{ display: 'flex', justifyContent: 'center' }}>
+                          <img
+                            src={preview}
+                            alt={`Nueva imagen ${index + 1}`}
+                            style={{ maxWidth: '100%', maxHeight: '300px', objectFit: 'contain' }}
+                            onClick={() => {
+                              setSelectedImage(preview);
+                              setOpenImageModal(true);
+                            }}
+                          />
+                        </Box>
+                      ))}
+                    </Slider>
+                  </Box>
+                ) : null}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  style={{ marginTop: '16px', marginBottom: '16px' }}
+                />
                 <TextField
                   label="Nombre"
                   value={name}
@@ -163,7 +249,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                   required
                   error={!!errors.name}
                   helperText={errors.name}
-                  sx={{ mb: 2 }}
+                  sx={{ mt: 2 }}
                 />
                 <TextField
                   label="Descripción"
@@ -172,7 +258,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                   fullWidth
                   multiline
                   rows={4}
-                  sx={{ mb: 2 }}
+                  sx={{ mt: 2 }}
                 />
                 {!isTotem && (
                   <TextField
@@ -180,7 +266,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                     value={schedule}
                     onChange={(e) => setSchedule(e.target.value)}
                     fullWidth
-                    sx={{ mb: 2 }}
+                    sx={{ mt: 2 }}
                   />
                 )}
                 <TextField
@@ -189,22 +275,41 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                   onChange={(e) => setStatus(e.target.value)}
                   fullWidth
                   select
-                  sx={{ mb: 2 }}
+                  sx={{ mt: 2 }}
                 >
                   <MenuItem value="Operativo">Operativo</MenuItem>
                   <MenuItem value="No Operativo">No Operativo</MenuItem>
                 </TextField>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  style={{ marginTop: '16px', marginBottom: '16px' }}
-                />
               </>
             ) : (
               <>
-                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: 'text.secondary' }}>
+                {images.length > 0 ? (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
+                      Imágenes:
+                    </Typography>
+                    <Slider dots={true} infinite={true} speed={500} slidesToShow={1} slidesToScroll={1}>
+                      {images.map((url, index) => (
+                        <Box key={url || `image-${index}`} sx={{ display: 'flex', justifyContent: 'center' }}>
+                          <img
+                            src={url}
+                            alt={`Imagen ${index + 1}`}
+                            style={{ maxWidth: '100%', maxHeight: '300px', objectFit: 'contain' }}
+                            onClick={() => {
+                              setSelectedImage(url);
+                              setOpenImageModal(true);
+                            }}
+                          />
+                        </Box>
+                      ))}
+                    </Slider>
+                  </Box>
+                ) : (
+                  <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+                    No hay imágenes disponibles
+                  </Typography>
+                )}
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, mt: 2, mb: 0.5, color: 'text.secondary' }}>
                   Nombre:
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 2 }}>
@@ -235,43 +340,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                   {punto.status}
                 </Typography>
               </>
-            )}
-            {punto.imageUrls && punto.imageUrls.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
-                  Imágenes:
-                </Typography>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                  }}
-                >
-                  {punto.imageUrls.map((url, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        position: 'relative',
-                        width: { xs: '80px', sm: '120px' },
-                        height: { xs: '80px', sm: '120px' },
-                      }}
-                    >
-                      <img
-                        src={url}
-                        alt={`Imagen ${index + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          borderRadius: '8px',
-                          border: '1px solid #e0e0e0',
-                        }}
-                      />
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
             )}
           </Box>
         ) : (
@@ -333,6 +401,16 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
           </>
         )}
       </DialogActions>
+      <Dialog open={openImageModal} onClose={() => setOpenImageModal(false)} maxWidth="md">
+        <DialogContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {selectedImage && (
+            <img src={selectedImage} alt="Imagen ampliada" style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenImageModal(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

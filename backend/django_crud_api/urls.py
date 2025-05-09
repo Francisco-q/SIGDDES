@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from rest_framework.routers import DefaultRouter
-from tasks.views import TotemQRViewSet, ReceptionQRViewSet, PathViewSet, UserProfileViewSet, ImageUploadView, home, DenunciaViewSet
+from tasks.views import TotemQRViewSet, ReceptionQRViewSet, PathViewSet, UserProfileViewSet, ImageUploadView, ImageListView, home, DenunciaViewSet
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
@@ -35,5 +35,6 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('api/image-upload/', ImageUploadView.as_view(), name='image-upload'),  # Registro manual
+    path('api/image-upload/', ImageUploadView.as_view(), name='image-upload'),  # Ya existente
+    path('api/images/', ImageListView.as_view(), name='image-list'),  # Nuevo endpoint
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

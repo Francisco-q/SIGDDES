@@ -718,7 +718,7 @@ const OpenMap: React.FC = () => {
         className="openmap-tabs"
       >
         <Tab label="Mapa" />
-        <Tab label="Denuncia" />
+        <Tab label="Entrevista" />
       </Tabs>
 
       {tabValue === 0 && (
@@ -795,8 +795,7 @@ const OpenMap: React.FC = () => {
         <Box className="openmap-form-container">
           {submitted ? (
             <Box sx={{ textAlign: 'center', mt: 10 }}>
-              <Typography variant="h5">Denuncia Enviada</Typography>
-              <Typography>Su denuncia ha sido recibida y será procesada a la brevedad.</Typography>
+              <Typography variant="h5">Entrevista de acogida enviada</Typography>
               <Button
                 variant="contained"
                 onClick={() => {
@@ -805,12 +804,12 @@ const OpenMap: React.FC = () => {
                 }}
                 className="openmap-form-button"
               >
-                Realizar otra denuncia
+                Realizar otra entrevista
               </Button>
             </Box>
           ) : (
             <Box component="form" onSubmit={form.handleSubmit(onSubmit)} className="openmap-form">
-              <Typography variant="h5" className="openmap-form-title">Formulario de Denuncia</Typography>
+              <Typography variant="h5" className="openmap-form-title">Formulario de Acogida</Typography>
               <Typography>Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género.</Typography>
 
               <Box className="openmap-form-section">
@@ -864,12 +863,11 @@ const OpenMap: React.FC = () => {
                     onChange={(e) => form.setValue('tipo_incidente', e.target.value as string)}
                   >
                     <MenuItem value="">Seleccione el tipo de incidente</MenuItem>
-                    <MenuItem value="acoso_sexual">Acoso Sexual</MenuItem>
-                    <MenuItem value="violencia_fisica">Violencia Física</MenuItem>
-                    <MenuItem value="violencia_psicologica">Violencia Psicológica</MenuItem>
-                    <MenuItem value="discriminacion">Discriminación de Género</MenuItem>
-                    <MenuItem value="acoso_laboral">Acoso Laboral</MenuItem>
-                    <MenuItem value="otro">Otro</MenuItem>
+                    <MenuItem value="Acoso_sexual">Acoso Sexual</MenuItem>
+                    <MenuItem value="Violencia_fisica">Violencia Física</MenuItem>
+                    <MenuItem value="Violencia_psicologica">Violencia Psicológica</MenuItem>
+                    <MenuItem value="Discriminacion">Discriminación de Género</MenuItem>
+                    <MenuItem value="No estoy seguro necesito orientación">Otro</MenuItem>
                   </Select>
                   {(form.formState.errors.tipo_incidente || formErrors.tipo_incidente) && (
                     <Typography color="error">{form.formState.errors.tipo_incidente?.message || formErrors.tipo_incidente}</Typography>
@@ -909,7 +907,7 @@ const OpenMap: React.FC = () => {
               </Box>
 
               <Button type="submit" variant="contained" color="primary" className="openmap-form-button">
-                Enviar Denuncia
+                Enviar entrevista
               </Button>
             </Box>
           )}

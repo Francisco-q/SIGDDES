@@ -67,7 +67,9 @@ const usePuntos = (campus: string) => {
 
   const handleCrearPunto = async (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     if (!modoAdmin || !crearPuntoActivo) return;
-
+    const elemento = document.getElementById('miElemento'); // Ejemplo
+    console.log('Elemento:', elemento);
+    console.log('Bounding rect:', elemento?.getBoundingClientRect());
     const svg = svgRef.current!.getBoundingClientRect();
     const x = (e.clientX - svg.left - transform.translateX) / transform.scale;
     const y = (e.clientY - svg.top - transform.translateY) / transform.scale;

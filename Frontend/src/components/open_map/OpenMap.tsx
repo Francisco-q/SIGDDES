@@ -31,7 +31,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
+import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { fetchPaths, fetchReceptions, fetchTotems } from '../../services/apiService';
@@ -53,6 +53,14 @@ const receptionIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  shadowSize: [41, 41],
+});
+
+const superHighlightedTotemIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconSize: [45, 61],
+  iconAnchor: [22, 61],
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   shadowSize: [41, 41],
 });
@@ -121,8 +129,19 @@ const OpenMap: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pathName, setPathName] = useState('');
   const [pathSaved, setPathSaved] = useState(false);
+  const [warningModalOpen, setWarningModalOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (warningModalOpen) {
+      const timer = setTimeout(() => {
+        setWarningModalOpen(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [warningModalOpen]);
 
   const refreshToken = async () => {
     try {
@@ -157,7 +176,6 @@ const OpenMap: React.FC = () => {
         const response = await axios.get('http://localhost:8000/api/user/current_user/', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        console.log('Respuesta de /api/user/current_user/:', response.data);
         setRole(response.data.role);
         setIsAuthenticated(true);
         setError(null);
@@ -169,7 +187,6 @@ const OpenMap: React.FC = () => {
               const response = await axios.get('http://localhost:8000/api/user/current_user/', {
                 headers: { Authorization: `Bearer ${newToken}` },
               });
-              console.log('Respuesta después de refresh:', response.data);
               setRole(response.data.role);
               setIsAuthenticated(true);
               setError(null);
@@ -239,16 +256,6 @@ const OpenMap: React.FC = () => {
     }
   }, [campus]);
 
-  useEffect(() => {
-    if (isCreatingPath && currentPathPoints.length > 1) {
-      if (!hasSafeSpace) {
-        setError('El camino debe conectarse a un Espacio Seguro antes de guardarlo.');
-      } else {
-        setError(null);
-      }
-    }
-  }, [currentPathPoints, isCreatingPath, receptions]);
-
   const handlePointClick = async (point: TotemQR | ReceptionQR) => {
     setSelectedPoint(point);
     setImageFiles([]);
@@ -278,32 +285,23 @@ const OpenMap: React.FC = () => {
     }
 
     const isTotem = !('schedule' in updatedPoint);
-    console.log('handleSavePoint - Guardando punto:', { isTotem, updatedPoint, imageFiles });
-
     try {
       let imageUrls = Array.isArray(updatedPoint.imageUrls) ? updatedPoint.imageUrls : [];
       if (imageFiles.length > 0) {
         const newImageUrls: string[] = [];
         for (const file of imageFiles) {
           const formData = new FormData();
-          formData.append('file', file); // Campo para el archivo
-          formData.append('point_id', updatedPoint.id.toString()); // Corregido de totem_id a point_id
-          formData.append('point_type', isTotem ? 'totem' : 'reception'); // Tipo de punto
-          formData.append('campus', updatedPoint.campus); // Campus
-          console.log('Enviando solicitud a /api/image-upload/ con:', {
-            file: file.name,
-            point_id: updatedPoint.id,
-            point_type: isTotem ? 'totem' : 'reception',
-            campus: updatedPoint.campus,
-          });
+          formData.append('file', file);
+          formData.append('point_id', updatedPoint.id.toString());
+          formData.append('point_type', isTotem ? 'totem' : 'reception');
+          formData.append('campus', updatedPoint.campus);
           const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-              'Content-Type': 'multipart/form-data', // Añadido
+              'Content-Type': 'multipart/form-data',
             },
           });
-          console.log('Respuesta de /api/image-upload/:', response.data);
-          newImageUrls.push(response.data.image); // Ajustado a response.data.image según el serializador
+          newImageUrls.push(response.data.image);
         }
         imageUrls = [...imageUrls, ...newImageUrls];
       }
@@ -317,16 +315,12 @@ const OpenMap: React.FC = () => {
       };
 
       const endpoint = isTotem ? 'totems' : 'recepciones';
-      console.log('Enviando a endpoint:', endpoint, 'Datos:', pointData);
-
       const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-
-      console.log('Respuesta del backend:', response.data);
 
       if (isTotem) {
         setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data as TotemQR : t)));
@@ -347,7 +341,6 @@ const OpenMap: React.FC = () => {
 
     try {
       const endpoint = isTotem ? 'totems' : 'recepciones';
-      console.log('Eliminando punto:', { pointId, endpoint });
       await axios.delete(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
@@ -416,7 +409,8 @@ const OpenMap: React.FC = () => {
               Math.abs(t.latitude - lat) < 0.0001 && Math.abs(t.longitude - lng) < 0.0001
             );
             if (!totem) {
-              setError('El camino debe comenzar desde un Totem QR.');
+              setWarningMessage('El camino debe comenzar desde un Tótem QR.');
+              setWarningModalOpen(true);
               return;
             }
           }
@@ -454,7 +448,6 @@ const OpenMap: React.FC = () => {
 
   const saveTotem = async (totem: Omit<TotemQR, 'id'>) => {
     try {
-      console.log('Creando tótem:', totem);
       const response = await axios.post('http://localhost:8000/api/totems/', totem, {
         headers: {
           'Content-Type': 'application/json',
@@ -491,7 +484,6 @@ const OpenMap: React.FC = () => {
 
   const saveReception = async (reception: Omit<ReceptionQR, 'id'>) => {
     try {
-      console.log('Creando recepción:', reception);
       const response = await axios.post('http://localhost:8000/api/recepciones/', reception, {
         headers: {
           'Content-Type': 'application/json',
@@ -533,11 +525,36 @@ const OpenMap: React.FC = () => {
     )
   );
 
-  const savePath = async () => {
+  const savePath = () => {
     if (currentPathPoints.length < 2) {
-      setError('El camino debe tener al menos dos puntos.');
+      setWarningMessage('El camino debe tener al menos dos puntos.');
+      setWarningModalOpen(true);
       return;
     }
+
+    const firstPoint = currentPathPoints[0];
+    const lastPoint = currentPathPoints[currentPathPoints.length - 1];
+
+    const isFirstPointTotem = totems.some(t =>
+      Math.abs(t.latitude - firstPoint[0]) < 0.0001 && Math.abs(t.longitude - firstPoint[1]) < 0.0001
+    );
+
+    if (!isFirstPointTotem) {
+      setWarningMessage('El camino debe comenzar en un Tótem QR.');
+      setWarningModalOpen(true);
+      return;
+    }
+
+    const isLastPointReception = receptions.some(r =>
+      Math.abs(r.latitude - lastPoint[0]) < 0.0001 && Math.abs(r.longitude - lastPoint[1]) < 0.0001
+    );
+
+    if (!isLastPointReception) {
+      setWarningMessage('El camino debe terminar en un Espacio Seguro (Recepción QR).');
+      setWarningModalOpen(true);
+      return;
+    }
+
     setIsConfirmModalOpen(true);
     setPathSaved(false);
   };
@@ -551,15 +568,6 @@ const OpenMap: React.FC = () => {
     const trimmedName = pathName.trim();
     if (!trimmedName || trimmedName.length < 3) {
       setError('Por favor, ingresa un nombre válido para el camino (mínimo 3 caracteres).');
-      return;
-    }
-    if (currentPathPoints.length < 2) {
-      setError('El camino debe tener al menos dos puntos.');
-      setIsConfirmModalOpen(false);
-      return;
-    }
-    if (!hasSafeSpace) {
-      setError('El camino debe conectarse al menos con un Espacio Seguro.');
       return;
     }
     const pathData = {
@@ -655,19 +663,16 @@ const OpenMap: React.FC = () => {
   const onSubmit = async (data: FormData) => {
     setFormErrors({});
     try {
-      console.log('Datos enviados:', data);
       const response = await axios.post('http://localhost:8000/api/denuncias/', data, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      console.log('Respuesta del servidor:', response.data);
       setSubmitted(true);
     } catch (error: any) {
       if (error.response) {
         const serverErrors = error.response.data;
-        console.error('Errores del servidor:', serverErrors);
         if (serverErrors && typeof serverErrors === 'object') {
           setFormErrors(serverErrors);
         } else {
@@ -753,26 +758,50 @@ const OpenMap: React.FC = () => {
                 />
               )}
               <MapClickHandler />
-              {totems.map(totem => (
-                <Marker
-                  key={totem.id}
-                  position={[totem.latitude, totem.longitude]}
-                  icon={totemIcon}
-                  interactive={!isCreatingPath}
-                  eventHandlers={{ click: () => !isCreatingPath && handlePointClick(totem) }}
-                >
-                </Marker>
-              ))}
-              {receptions.map(reception => (
-                <Marker
-                  key={reception.id}
-                  position={[reception.latitude, reception.longitude]}
-                  icon={receptionIcon}
-                  interactive={!isCreatingPath}
-                  eventHandlers={{ click: () => !isCreatingPath && handlePointClick(reception) }}
-                >
-                </Marker>
-              ))}
+              {isCreatingPath && (
+                <>
+                  {totems.map(totem => (
+                    <Circle
+                      key={`totem-circle-${totem.id}`}
+                      center={[totem.latitude, totem.longitude]}
+                      radius={10}
+                      color="green"
+                      fillColor="green"
+                      fillOpacity={0.2}
+                    />
+                  ))}
+                  {receptions.map(reception => (
+                    <Circle
+                      key={`reception-circle-${reception.id}`}
+                      center={[reception.latitude, reception.longitude]}
+                      radius={10}
+                      color="blue"
+                      fillColor="blue"
+                      fillOpacity={0.2}
+                    />
+                  ))}
+                </>
+              )}
+              {!isCreatingPath && (
+                <>
+                  {totems.map(totem => (
+                    <Marker
+                      key={totem.id}
+                      position={[totem.latitude, totem.longitude]}
+                      icon={totemIcon}
+                      eventHandlers={{ click: () => handlePointClick(totem) }}
+                    />
+                  ))}
+                  {receptions.map(reception => (
+                    <Marker
+                      key={reception.id}
+                      position={[reception.latitude, reception.longitude]}
+                      icon={receptionIcon}
+                      eventHandlers={{ click: () => handlePointClick(reception) }}
+                    />
+                  ))}
+                </>
+              )}
               {currentPathPoints.length > 1 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
               {showPaths &&
                 paths.map(path => (
@@ -1061,12 +1090,24 @@ const OpenMap: React.FC = () => {
               <Button
                 onClick={confirmSavePath}
                 color="primary"
-                disabled={pathName.trim().length < 3 || currentPathPoints.length < 2 || !hasSafeSpace}
+                disabled={pathName.trim().length < 3}
               >
                 Guardar
               </Button>
             </>
           )}
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={warningModalOpen} onClose={() => setWarningModalOpen(false)}>
+        <DialogTitle>Advertencia</DialogTitle>
+        <DialogContent>
+          <Typography>{warningMessage}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWarningModalOpen(false)} color="primary">
+            Cerrar
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

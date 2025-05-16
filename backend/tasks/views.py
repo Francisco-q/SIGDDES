@@ -12,6 +12,7 @@ from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from .permissions import RoleBasedPermission
 import math
+import requests
 
 def home(request):
     return HttpResponse("Bienvenido al backend de mapas QR")
@@ -97,6 +98,48 @@ class DenunciaViewSet(viewsets.ModelViewSet):
     queryset = Denuncia.objects.all()
     serializer_class = DenunciaSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        # Crear la denuncia en la base de datos
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+
+        # Crear una issue en Jira
+        try:
+            self.create_jira_issue(serializer.data)
+        except Exception as e:
+            # Manejo básico de errores (puedes mejorarlo según tus necesidades)
+            print(f"Error al crear issue en Jira: {e}")
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def create_jira_issue(self, denuncia_data):
+        """Crea una issue en Jira basada en los datos de la denuncia."""
+        url = f"{settings.JIRA_API_URL}/rest/api/3/issue"
+        auth = (settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)
+        headers = {"Content-Type": "application/json"}
+
+        # Mapear los datos de la denuncia a los campos de Jira
+        issue_data = {
+            "fields": {
+                "project": {"key": settings.JIRA_PROJECT_KEY},
+                "summary": f"Caso de acogida: {denuncia_data.get('nombre', '')} {denuncia_data.get('apellido', '')}",
+                "description": denuncia_data.get('descripcion', ''),
+                "issuetype": {"name": "Task"},  # Puedes cambiar el tipo de issue según Jira
+            }
+        }
+
+        # Enviar solicitud a la API de Jira
+        try:
+            response = requests.post(url, json=issue_data, auth=auth, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            print(f"Error al crear issue en Jira: {e}")
+            print(f"Detalles del error: {response.text}")  # Imprime el mensaje de error de Jira
+            raise Exception(f"Error de Jira: {error_details}")
 
 class ImageUploadView(APIView):
     permission_classes = [RoleBasedPermission]

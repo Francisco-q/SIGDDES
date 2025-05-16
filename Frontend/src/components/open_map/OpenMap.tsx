@@ -1,4 +1,3 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Cancel as CancelIcon,
   Home as HomeIcon,
@@ -16,69 +15,26 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Tab,
   Tabs,
   TextField,
   Tooltip,
-  Typography,
+  Typography
 } from '@mui/material';
 import axios from 'axios';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { z } from 'zod';
 import { fetchPaths, fetchReceptions, fetchTotems } from '../../services/apiService';
 import { Path, ReceptionQR, TotemQR } from '../../types/types';
-import InfoPunto from './InfoPunto';
+import MapComponent from '../open_map/Mapa/MapComponent';
+import FormComponent from './Mapa/FormAcogida/FormComponent';
+import InfoPunto from './Mapa/info_punto/InfoPunto';
 import './OpenMap.css';
-import SetView from './SetView';
-
-// Definir íconos personalizados
-const totemIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  shadowSize: [41, 41],
-});
-
-const receptionIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  shadowSize: [41, 41],
-});
-
-const superHighlightedTotemIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconSize: [45, 61],
-  iconAnchor: [22, 61],
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  shadowSize: [41, 41],
-});
 
 // Esquema de validación para el formulario de denuncia
-const formSchema = z.object({
-  nombre: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
-  apellido: z.string().min(2, { message: 'El apellido debe tener al menos 2 caracteres.' }),
-  email: z.string().email({ message: 'Por favor ingrese un email válido.' }),
-  telefono: z.string().min(8, { message: 'Por favor ingrese un número de teléfono válido.' }),
-  tipo_incidente: z.string({ required_error: 'Por favor seleccione un tipo de incidente.' }),
-  fecha_incidente: z.string({ required_error: 'Por favor ingrese la fecha del incidente.' }).regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha debe estar en formato YYYY-MM-DD.' }),
-  lugar_incidente: z.string().min(2, { message: 'Por favor ingrese el lugar del incidente.' }),
-  descripcion: z.string().min(10, { message: 'La descripción debe tener al menos 10 caracteres.' }),
-  campus: z.string().optional(),
-});
 
-type FormData = z.infer<typeof formSchema>;
+
 
 const OpenMap: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
@@ -90,10 +46,6 @@ const OpenMap: React.FC = () => {
   const [svgError, setSvgError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const svgBounds: [[number, number], [number, number]] = [
-    [51.505, -0.09],
-    [51.51, -0.1],
-  ];
 
   const campusSvgMap: Record<string, string> = {
     talca: '/assets/Talca.svg',
@@ -256,12 +208,6 @@ const OpenMap: React.FC = () => {
     }
   }, [campus]);
 
-  const handlePointClick = async (point: TotemQR | ReceptionQR) => {
-    setSelectedPoint(point);
-    setImageFiles([]);
-    setIsModalOpen(true);
-  };
-
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPoint(null);
@@ -398,133 +344,6 @@ const OpenMap: React.FC = () => {
     navigate('/home');
   };
 
-  const MapClickHandler: React.FC = () => {
-    useMapEvents({
-      click(e) {
-        if (!['admin', 'superuser'].includes(role as string)) return;
-        if (isCreatingPath) {
-          const { lat, lng } = e.latlng;
-          if (currentPathPoints.length === 0) {
-            const totem = totems.find(t =>
-              Math.abs(t.latitude - lat) < 0.0001 && Math.abs(t.longitude - lng) < 0.0001
-            );
-            if (!totem) {
-              setWarningMessage('El camino debe comenzar desde un Tótem QR.');
-              setWarningModalOpen(true);
-              return;
-            }
-          }
-          setCurrentPathPoints(prev => [...prev, [lat, lng]]);
-        } else if (isCreatingTotem) {
-          const { lat, lng } = e.latlng;
-          const newTotem: Omit<TotemQR, 'id'> = {
-            latitude: lat,
-            longitude: lng,
-            name: 'Nuevo Totem QR',
-            description: '',
-            imageUrls: [],
-            campus: campus || '',
-            status: 'Operativo',
-          };
-          saveTotem(newTotem);
-        } else if (isCreatingReception) {
-          const { lat, lng } = e.latlng;
-          const newReception: Omit<ReceptionQR, 'id'> = {
-            latitude: lat,
-            longitude: lng,
-            name: 'Nuevo Espacio Seguro',
-            description: '',
-            imageUrls: [],
-            campus: campus || '',
-            schedule: '',
-            status: 'Operativo',
-          };
-          saveReception(newReception);
-        }
-      },
-    });
-    return null;
-  };
-
-  const saveTotem = async (totem: Omit<TotemQR, 'id'>) => {
-    try {
-      const response = await axios.post('http://localhost:8000/api/totems/', totem, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-      setTotems([...totems, response.data as TotemQR]);
-      setIsCreatingTotem(false);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            const response = await axios.post('http://localhost:8000/api/totems/', totem, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            setTotems([...totems, response.data as TotemQR]);
-            setIsCreatingTotem(false);
-            return;
-          } catch (retryError) {
-            console.error('Error creating totem after refresh:', retryError);
-            setError('Error al crear el tótem tras reautenticación.');
-          }
-        }
-      }
-      console.error('Error creating totem:', error);
-      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo crear el tótem.';
-      setError(errorMessage);
-    }
-  };
-
-  const saveReception = async (reception: Omit<ReceptionQR, 'id'>) => {
-    try {
-      const response = await axios.post('http://localhost:8000/api/recepciones/', reception, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-      setReceptions([...receptions, response.data as ReceptionQR]);
-      setIsCreatingReception(false);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            const response = await axios.post('http://localhost:8000/api/recepciones/', reception, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            setReceptions([...receptions, response.data as ReceptionQR]);
-            setIsCreatingReception(false);
-            return;
-          } catch (retryError) {
-            console.error('Error creating reception after refresh:', retryError);
-            setError('Error al crear la recepción tras reautenticación.');
-          }
-        }
-      }
-      console.error('Error creating reception:', error);
-      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo crear la recepción.';
-      setError(errorMessage);
-    }
-  };
-
-  const otherPoints = currentPathPoints.slice(1);
-  const hasSafeSpace = otherPoints.some((point: [number, number]) =>
-    receptions.some(r =>
-      Math.abs(r.latitude - point[0]) < 0.0001 && Math.abs(r.longitude - point[1]) < 0.0001
-    )
-  );
-
   const savePath = () => {
     if (currentPathPoints.length < 2) {
       setWarningMessage('El camino debe tener al menos dos puntos.');
@@ -645,45 +464,6 @@ const OpenMap: React.FC = () => {
     setShowPaths(!showPaths);
   };
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      nombre: '',
-      apellido: '',
-      email: '',
-      telefono: '',
-      tipo_incidente: '',
-      fecha_incidente: '',
-      lugar_incidente: '',
-      descripcion: '',
-      campus: campus || '',
-    },
-  });
-
-  const onSubmit = async (data: FormData) => {
-    setFormErrors({});
-    try {
-      const response = await axios.post('http://localhost:8000/api/denuncias/', data, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-      setSubmitted(true);
-    } catch (error: any) {
-      if (error.response) {
-        const serverErrors = error.response.data;
-        if (serverErrors && typeof serverErrors === 'object') {
-          setFormErrors(serverErrors);
-        } else {
-          setError('Error al enviar la denuncia: ' + error.response.data.detail);
-        }
-      } else {
-        setError('Error al enviar la denuncia: ' + error.message);
-      }
-    }
-  };
-
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -729,90 +509,32 @@ const OpenMap: React.FC = () => {
       {tabValue === 0 && (
         <Box className="openmap-map-container">
           {mapaSrc ? (
-            <MapContainer
-              className="openmap-map"
-              zoom={18}
-              maxZoom={22}
-              minZoom={10}
-              zoomControl={false}
-            >
-              {!isCreatingPath && <SetView bounds={svgBounds} zoom={18} />}
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                opacity={0}
-                maxZoom={19}
-                minZoom={10}
-              />
-              {campus && (
-                <ImageOverlay
-                  url={mapaSrc}
-                  bounds={svgBounds}
-                  opacity={1}
-                  eventHandlers={{
-                    error: () => {
-                      console.error('Error al cargar el archivo SVG');
-                      setSvgError('No se pudo cargar el mapa del campus. Verifica que el archivo SVG sea válido.');
-                    },
-                  }}
-                />
-              )}
-              <MapClickHandler />
-              {isCreatingPath && (
-                <>
-                  {totems.map(totem => (
-                    <Circle
-                      key={`totem-circle-${totem.id}`}
-                      center={[totem.latitude, totem.longitude]}
-                      radius={10}
-                      color="green"
-                      fillColor="green"
-                      fillOpacity={0.2}
-                    />
-                  ))}
-                  {receptions.map(reception => (
-                    <Circle
-                      key={`reception-circle-${reception.id}`}
-                      center={[reception.latitude, reception.longitude]}
-                      radius={10}
-                      color="blue"
-                      fillColor="blue"
-                      fillOpacity={0.2}
-                    />
-                  ))}
-                </>
-              )}
-              {!isCreatingPath && (
-                <>
-                  {totems.map(totem => (
-                    <Marker
-                      key={totem.id}
-                      position={[totem.latitude, totem.longitude]}
-                      icon={totemIcon}
-                      eventHandlers={{ click: () => handlePointClick(totem) }}
-                    />
-                  ))}
-                  {receptions.map(reception => (
-                    <Marker
-                      key={reception.id}
-                      position={[reception.latitude, reception.longitude]}
-                      icon={receptionIcon}
-                      eventHandlers={{ click: () => handlePointClick(reception) }}
-                    />
-                  ))}
-                </>
-              )}
-              {currentPathPoints.length > 1 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
-              {showPaths &&
-                paths.map(path => (
-                  <Polyline key={path.id} positions={path.points.map(p => [p.latitude, p.longitude])} color="blue" weight={5} />
-                ))}
-              <ZoomControl position="topright" />
-            </MapContainer>
+            <MapComponent
+              campus={campus || ''}
+              totems={totems}
+              receptions={receptions}
+              paths={paths}
+              showPaths={showPaths}
+              isCreatingPath={isCreatingPath}
+              isCreatingTotem={isCreatingTotem}
+              isCreatingReception={isCreatingReception}
+              currentPathPoints={currentPathPoints}
+              setCurrentPathPoints={setCurrentPathPoints}
+              setSelectedPoint={setSelectedPoint}
+              setIsModalOpen={setIsModalOpen}
+              role={role}
+              mapaSrc={mapaSrc}
+              setWarningMessage={setWarningMessage}
+              setWarningModalOpen={setWarningModalOpen}
+            />
           ) : (
             <Box className="openmap-error">
               <Typography>No se encontró un mapa para el campus seleccionado.</Typography>
-              <Button variant="contained" color="primary" onClick={() => navigate('/home')}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => navigate('/home')}
+              >
                 Volver a la página principal
               </Button>
             </Box>
@@ -822,121 +544,21 @@ const OpenMap: React.FC = () => {
 
       {tabValue === 1 && (
         <Box className="openmap-form-container">
-          {submitted ? (
+          <FormComponent
+            campus={campus}
+            setSubmitted={setSubmitted}
+            setFormErrors={setFormErrors}
+            setError={setError}
+          />
+          {submitted && (
             <Box sx={{ textAlign: 'center', mt: 10 }}>
               <Typography variant="h5">Entrevista de acogida enviada</Typography>
               <Button
                 variant="contained"
-                onClick={() => {
-                  setSubmitted(false);
-                  form.reset();
-                }}
+                onClick={() => setSubmitted(false)}
                 className="openmap-form-button"
               >
                 Realizar otra entrevista
-              </Button>
-            </Box>
-          ) : (
-            <Box component="form" onSubmit={form.handleSubmit(onSubmit)} className="openmap-form">
-              <Typography variant="h5" className="openmap-form-title">Formulario de Acogida</Typography>
-              <Typography>Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género.</Typography>
-
-              <Box className="openmap-form-section">
-                <Typography variant="h6">Información Personal</Typography>
-                <TextField
-                  label="Nombre"
-                  {...form.register('nombre')}
-                  error={!!form.formState.errors.nombre || !!formErrors.nombre}
-                  helperText={form.formState.errors.nombre?.message || formErrors.nombre}
-                  fullWidth
-                  margin="normal"
-                  required
-                />
-                <TextField
-                  label="Apellido"
-                  {...form.register('apellido')}
-                  error={!!form.formState.errors.apellido || !!formErrors.apellido}
-                  helperText={form.formState.errors.apellido?.message || formErrors.apellido}
-                  fullWidth
-                  margin="normal"
-                  required
-                />
-                <TextField
-                  label="Correo Electrónico"
-                  type="email"
-                  {...form.register('email')}
-                  error={!!form.formState.errors.email || !!formErrors.email}
-                  helperText={form.formState.errors.email?.message || formErrors.email}
-                  fullWidth
-                  margin="normal"
-                  required
-                />
-                <TextField
-                  label="Teléfono"
-                  {...form.register('telefono')}
-                  error={!!form.formState.errors.telefono || !!formErrors.telefono}
-                  helperText={form.formState.errors.telefono?.message || formErrors.telefono}
-                  fullWidth
-                  margin="normal"
-                  required
-                />
-              </Box>
-
-              <Box className="openmap-form-section">
-                <Typography variant="h6">Detalles del Incidente</Typography>
-                <FormControl fullWidth margin="normal" error={!!form.formState.errors.tipo_incidente || !!formErrors.tipo_incidente}>
-                  <InputLabel>Tipo de Incidente</InputLabel>
-                  <Select
-                    {...form.register('tipo_incidente')}
-                    value={form.watch('tipo_incidente')}
-                    onChange={(e) => form.setValue('tipo_incidente', e.target.value as string)}
-                  >
-                    <MenuItem value="">Seleccione el tipo de incidente</MenuItem>
-                    <MenuItem value="Acoso_sexual">Acoso Sexual</MenuItem>
-                    <MenuItem value="Violencia_fisica">Violencia Física</MenuItem>
-                    <MenuItem value="Violencia_psicologica">Violencia Psicológica</MenuItem>
-                    <MenuItem value="Discriminacion">Discriminación de Género</MenuItem>
-                    <MenuItem value="No estoy seguro necesito orientación">Otro</MenuItem>
-                  </Select>
-                  {(form.formState.errors.tipo_incidente || formErrors.tipo_incidente) && (
-                    <Typography color="error">{form.formState.errors.tipo_incidente?.message || formErrors.tipo_incidente}</Typography>
-                  )}
-                </FormControl>
-                <TextField
-                  label="Fecha del Incidente"
-                  type="date"
-                  {...form.register('fecha_incidente')}
-                  error={!!form.formState.errors.fecha_incidente || !!formErrors.fecha_incidente}
-                  helperText={form.formState.errors.fecha_incidente?.message || formErrors.fecha_incidente}
-                  fullWidth
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                  required
-                />
-                <TextField
-                  label="Lugar del Incidente"
-                  {...form.register('lugar_incidente')}
-                  error={!!form.formState.errors.lugar_incidente || !!formErrors.lugar_incidente}
-                  helperText={form.formState.errors.lugar_incidente?.message || formErrors.lugar_incidente}
-                  fullWidth
-                  margin="normal"
-                  required
-                />
-                <TextField
-                  label="Descripción del Incidente"
-                  multiline
-                  rows={4}
-                  {...form.register('descripcion')}
-                  error={!!form.formState.errors.descripcion || !!formErrors.descripcion}
-                  helperText={form.formState.errors.descripcion?.message || formErrors.descripcion || 'Incluya todos los detalles relevantes.'}
-                  fullWidth
-                  margin="normal"
-                  required
-                />
-              </Box>
-
-              <Button type="submit" variant="contained" color="primary" className="openmap-form-button">
-                Enviar entrevista
               </Button>
             </Box>
           )}

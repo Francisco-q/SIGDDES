@@ -53,6 +53,7 @@ const OpenMap: React.FC = () => {
     colchagua: '/assets/Colchagua.svg',
     pehuenche: '/assets/Pehuenche.svg',
     santiago: '/assets/Santiago.svg',
+    linares: '/assets/Linares.svg',
   };
 
   const getMapaSrc = (campus: string | undefined) => {

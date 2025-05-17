@@ -117,7 +117,7 @@ class DenunciaViewSet(viewsets.ModelViewSet):
 
     def create_jira_issue(self, denuncia_data):
         """Crea una issue en Jira basada en los datos de la denuncia."""
-        url = f"{settings.JIRA_API_URL}/rest/api/3/issue"
+        url = f"{settings.JIRA_API_URL}/rest/api/2/issue"
         auth = (settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)
         headers = {"Content-Type": "application/json"}
 
@@ -130,7 +130,7 @@ class DenunciaViewSet(viewsets.ModelViewSet):
                 "issuetype": {"name": "Task"},  # Puedes cambiar el tipo de issue según Jira
             }
         }
-
+        print("Payload enviado a Jira:", issue_data)
         # Enviar solicitud a la API de Jira
         try:
             response = requests.post(url, json=issue_data, auth=auth, headers=headers)
@@ -139,6 +139,7 @@ class DenunciaViewSet(viewsets.ModelViewSet):
         except requests.exceptions.HTTPError as e:
             print(f"Error al crear issue en Jira: {e}")
             print(f"Detalles del error: {response.text}")  # Imprime el mensaje de error de Jira
+            error_details = response.text
             raise Exception(f"Error de Jira: {error_details}")
 
 class ImageUploadView(APIView):

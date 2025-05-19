@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 # JWT Configuration
 from datetime import timedelta
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -109,7 +110,7 @@ SIMPLE_JWT = {
 
 
 # Configuración de Jira
-JIRA_API_URL = os.getenv('JIRA_API_URL', 'https://mockflujojira.atlassian.net')  # URL por defecto para pruebas
-JIRA_API_TOKEN = os.getenv('JIRA_API_TOKEN')  # Token de API de Jira
-JIRA_EMAIL = os.getenv('JIRA_EMAIL')  # Email asociado al token
-JIRA_PROJECT_KEY = os.getenv('JIRA_PROJECT_KEY', 'MLP')  # Clave del proyecto en Jira (por defecto 'TEST')
+JIRA_API_URL = config('JIRA_API_URL')
+JIRA_EMAIL = config('JIRA_EMAIL')
+JIRA_API_TOKEN = config('JIRA_API_TOKEN')
+JIRA_PROJECT_KEY = config('JIRA_PROJECT_KEY')

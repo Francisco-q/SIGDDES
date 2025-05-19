@@ -117,16 +117,32 @@ class DenunciaViewSet(viewsets.ModelViewSet):
 
     def create_jira_issue(self, denuncia_data):
         """Crea una issue en Jira basada en los datos de la denuncia."""
-        url = f"{settings.JIRA_API_URL}/rest/api/2/issue"
+        url = f"{settings.JIRA_API_URL}/rest/api/3/issue"
         auth = (settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)
-        headers = {"Content-Type": "application/json"}
-
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
         # Mapear los datos de la denuncia a los campos de Jira
         issue_data = {
             "fields": {
                 "project": {"key": settings.JIRA_PROJECT_KEY},
                 "summary": f"Caso de acogida: {denuncia_data.get('nombre', '')} {denuncia_data.get('apellido', '')}",
-                "description": denuncia_data.get('descripcion', ''),
+                "description": {
+                    "type": "doc",
+                    "version": 1,
+                    "content": [
+                        {
+                            "type": "paragraph",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": denuncia_data.get('descripcion', '')
+                                }
+                            ]
+                        }
+                    ]
+                },
                 "issuetype": {"name": "Task"},  # Puedes cambiar el tipo de issue según Jira
             }
         }

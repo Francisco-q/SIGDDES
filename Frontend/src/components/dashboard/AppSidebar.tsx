@@ -13,7 +13,8 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    useMediaQuery, useTheme,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -34,18 +35,18 @@ interface AppSidebarProps {
 export default function AppSidebar({ onLogout }: AppSidebarProps) {
     const navigate = useNavigate();
     const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // Detecta pantallas pequeñas
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     const handleSelectCampus = (campus: string) => {
-        navigate(`/mapa2/${campus}`); // Navega a /mapa2/campus seleccionado
-        if (isSmallScreen) setIsDrawerOpen(false); // Cierra el menú en pantallas pequeñas
+        navigate(`/mapa2/${campus}`);
+        if (isSmallScreen) setIsDrawerOpen(false);
     };
 
     const handleLogout = () => {
-        onLogout(); // Ejecuta la lógica de cierre de sesión
-        navigate('/login'); // Redirige al login
-        if (isSmallScreen) setIsDrawerOpen(false); // Cierra el menú en pantallas pequeñas
+        onLogout();
+        navigate('/login');
+        if (isSmallScreen) setIsDrawerOpen(false);
     };
 
     const drawerContent = (
@@ -107,10 +108,17 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
         <>
             {isSmallScreen ? (
                 <>
-                    {/* Botón para abrir el menú en pantallas pequeñas */}
                     <IconButton
                         onClick={() => setIsDrawerOpen(true)}
-                        sx={{ position: 'absolute', top: 16, left: 16 }}
+                        sx={{
+                            position: 'fixed',
+                            top: 16,
+                            left: 16,
+                            zIndex: 1300,
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            '&:hover': { bgcolor: 'primary.dark' },
+                        }}
                     >
                         <MenuIcon />
                     </IconButton>
@@ -119,7 +127,7 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                         open={isDrawerOpen}
                         onClose={() => setIsDrawerOpen(false)}
                         ModalProps={{
-                            keepMounted: true, // Mejora el rendimiento en pantallas móviles
+                            keepMounted: true,
                         }}
                         sx={{
                             '& .MuiDrawer-paper': {

@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import React from 'react';
-import AppSidebar from './dashboard/AppSidebar';
-import Dashboard from './dashboard/DashboardDenuncias';
+import AppSidebar from './AppSidebar';
+import Dashboard from './DashboardDenuncias';
 
 interface HomeProps {
   onLogout: () => void;
@@ -17,9 +17,9 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
       <Box
         sx={{
           mt: 10,
-          ml: 4,
-          mr: 10,
-          mb: 4,
+          ml: 2,
+          mr: 2,
+          mb: 2,
           flexGrow: 1,
           backgroundColor: 'rgba(255, 255, 255, 0.8)',
           backdropFilter: 'blur(10px)',

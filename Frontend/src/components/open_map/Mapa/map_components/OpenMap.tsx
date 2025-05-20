@@ -25,11 +25,11 @@ import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchPaths, fetchReceptions, fetchTotems } from '../../services/apiService';
-import { Path, ReceptionQR, TotemQR } from '../../types/types';
-import MapComponent from '../open_map/Mapa/MapComponent';
-import FormComponent from './Mapa/FormAcogida/FormComponent';
-import InfoPunto from './Mapa/info_punto/InfoPunto';
+import { fetchPaths, fetchReceptions, fetchTotems } from '../../../../services/apiService';
+import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
+import FormComponent from '../FormAcogida/FormComponent';
+import InfoPunto from '../info_punto/InfoPunto';
+import MapComponent from '../map_components/MapComponent';
 import './OpenMap.css';
 
 // Esquema de validación para el formulario de denuncia

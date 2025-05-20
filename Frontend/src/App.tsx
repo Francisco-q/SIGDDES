@@ -3,9 +3,9 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import AdminCrud from './components/admin/AdminCrud';
-import Home from './components/Home';
+import Home from './components/dashboard/Home';
 import Login from './components/login/Login';
-import MapComponent from './components/open_map/OpenMap';
+import MapComponent from './components/open_map/Mapa/map_components/OpenMap';
 
 const PrivateRoute: React.FC<{ role: string | null }> = ({ role }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

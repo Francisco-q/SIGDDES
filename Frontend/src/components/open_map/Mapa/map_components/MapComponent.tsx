@@ -3,9 +3,9 @@ import 'leaflet/dist/leaflet.css';
 import React from 'react';
 import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
 // Update the import path if your types are located elsewhere, for example:
-import { Path, ReceptionQR, TotemQR } from '../../../types/types';
+import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
 // Or, if the file does not exist, create 'src/types/types.ts' and export the types there.
-import SetView from '../SetView';
+import SetView from '../../SetView';
 
 const totemIcon = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',

@@ -1,11 +1,15 @@
 import {
     Business as BuildingIcon,
     Logout as LogOutIcon,
-    Settings as SettingsIcon,
+    Person as ProfileIcon,
 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
 import {
     Box,
+    Button,
+    Card,
+    CardContent,
+    CardHeader,
     Divider,
     Drawer,
     IconButton,
@@ -13,9 +17,14 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
+    Modal,
+    Typography,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
+import axios from 'axios';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,11 +41,26 @@ interface AppSidebarProps {
     onLogout: () => void;
 }
 
+interface Usuario {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    telefono: string | null;
+    campus: string | null;
+    role: string;
+    date_joined: string;
+}
+
 export default function AppSidebar({ onLogout }: AppSidebarProps) {
     const navigate = useNavigate();
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [usuario, setUsuario] = useState<Usuario | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSelectCampus = (campus: string) => {
         navigate(`/mapa2/${campus}`);
@@ -47,6 +71,33 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
         onLogout();
         navigate('/login');
         if (isSmallScreen) setIsDrawerOpen(false);
+    };
+
+    const handleProfile = async () => {
+        setIsModalOpen(true);
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('access_token');
+            console.log('Haciendo GET a /api/usuario/perfil/ con token:', token);
+            const response = await axios.get('http://localhost:8000/api/usuario/perfil/', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            console.log('Datos recibidos:', response.data);
+            setUsuario(response.data);
+            setError(null);
+        } catch (err) {
+            console.log('Error en GET:', err);
+            setError('Error al cargar los datos del usuario');
+        } finally {
+            setLoading(false);
+        }
+        if (isSmallScreen) setIsDrawerOpen(false);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setUsuario(null);
+        setError(null);
     };
 
     const drawerContent = (
@@ -68,7 +119,7 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                             <BuildingIcon sx={{ color: 'white' }} />
                         </Box>
                     </ListItemIcon>
-                    <ListItemText primary="Universidad de Talca" secondary="Sistema de Denuncias" />
+                    <ListItemText primary="Universidad de Talca" secondary="Mapas de campus" />
                 </ListItemButton>
             </Box>
             <Divider />
@@ -84,11 +135,11 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
             </List>
             <Divider />
             <List>
-                <ListItemButton component="a" href="#">
+                <ListItemButton onClick={handleProfile}>
                     <ListItemIcon>
-                        <SettingsIcon />
+                        <ProfileIcon />
                     </ListItemIcon>
-                    <ListItemText primary="Ajustes" />
+                    <ListItemText primary="Perfil" />
                 </ListItemButton>
             </List>
             <Box sx={{ flexGrow: 1 }} />
@@ -155,6 +206,72 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                     {drawerContent}
                 </Drawer>
             )}
+            <Modal
+                open={isModalOpen}
+                onClose={handleCloseModal}
+                aria-labelledby="modal-perfil-usuario"
+                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+                <Card sx={{ width: '90%', maxWidth: 500, maxHeight: '80vh', overflowY: 'auto' }}>
+                    <CardHeader
+                        title={usuario ? `${usuario.first_name} ${usuario.last_name}` : 'Perfil de Usuario'}
+                        subheader="Información del usuario"
+                        titleTypographyProps={{ textAlign: 'center' }}
+                        subheaderTypographyProps={{ textAlign: 'center' }}
+                    />
+                    <CardContent>
+                        {loading ? (
+                            <Typography sx={{ textAlign: 'center' }}>Cargando datos...</Typography>
+                        ) : error || !usuario ? (
+                            <Typography sx={{ textAlign: 'center' }} color="error">
+                                {error || 'No se encontraron datos del usuario'}
+                            </Typography>
+                        ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                    <Typography variant="caption" color="textSecondary">
+                                        Correo Electrónico
+                                    </Typography>
+                                    <Typography variant="body2">{usuario.email}</Typography>
+                                </Box>
+                                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                    <Typography variant="caption" color="textSecondary">
+                                        Teléfono
+                                    </Typography>
+                                    <Typography variant="body2">{usuario.telefono || 'No especificado'}</Typography>
+                                </Box>
+                                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                    <Typography variant="caption" color="textSecondary">
+                                        Rol
+                                    </Typography>
+                                    <Typography variant="body2">{usuario.role}</Typography>
+                                </Box>
+                                {usuario.campus && (
+                                    <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                        <Typography variant="caption" color="textSecondary">
+                                            Campus
+                                        </Typography>
+                                        <Typography variant="body2">{usuario.campus}</Typography>
+                                    </Box>
+                                )}
+                                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                                    <Typography variant="caption" color="textSecondary">
+                                        Fecha de Registro
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        {format(new Date(usuario.date_joined), 'dd/MM/yyyy', { locale: es })}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
+                    </CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                        <Button variant="contained" onClick={handleCloseModal}>
+                            Cerrar
+                        </Button>
+                    </Box>
+                </Card>
+            </Modal>
         </>
     );
 }

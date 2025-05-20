@@ -7,6 +7,7 @@ export interface TotemQR {
   imageUrls: string[];
   campus: string;
   status: string;
+  qr_image: string | null; // Nuevo campo
 }
 
 export interface ReceptionQR {
@@ -19,6 +20,7 @@ export interface ReceptionQR {
   campus: string;
   schedule: string;
   status: string;
+  qr_image: string | null; // Nuevo campo
 }
 
 export interface PathPoint {

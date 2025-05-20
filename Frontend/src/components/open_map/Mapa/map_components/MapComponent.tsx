@@ -1,10 +1,8 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import React from 'react';
-import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMapEvents, ZoomControl } from 'react-leaflet';
-// Update the import path if your types are located elsewhere, for example:
+import React, { useEffect } from 'react';
+import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
-// Or, if the file does not exist, create 'src/types/types.ts' and export the types there.
 import SetView from '../../SetView';
 
 const totemIcon = new L.Icon({
@@ -38,6 +36,9 @@ interface MapComponentProps {
     setIsModalOpen: (open: boolean) => void;
     role: string | null;
     mapaSrc: string;
+    onCreateTotem: (lat: number, lng: number) => void;
+    onCreateReception: (lat: number, lng: number) => void;
+    initialPoint: TotemQR | ReceptionQR | null;
     setWarningMessage: (message: string) => void;
     setWarningModalOpen: (open: boolean) => void;
 }
@@ -57,6 +58,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setIsModalOpen,
     role,
     mapaSrc,
+    onCreateTotem,
+    onCreateReception,
+    initialPoint,
     setWarningMessage,
     setWarningModalOpen,
 }) => {
@@ -65,50 +69,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
         [51.51, -0.1],
     ];
 
+    const ZoomToInitialPoint: React.FC<{ initialPoint: TotemQR | ReceptionQR | null }> = ({ initialPoint }) => {
+        const map = useMap();
+
+        useEffect(() => {
+            if (initialPoint) {
+                const { latitude, longitude } = initialPoint;
+                map.setView([latitude, longitude], 20);
+            }
+        }, [initialPoint, map]);
+
+        return null;
+    };
+
     const MapClickHandler: React.FC = () => {
         useMapEvents({
             click(e) {
                 if (!['admin', 'superuser'].includes(role as string)) return;
+
+                const { lat, lng } = e.latlng;
+
                 if (isCreatingPath) {
-                    const { lat, lng } = e.latlng;
+                    // Validar solo el primer punto (debe estar cerca de un tótem)
                     if (currentPathPoints.length === 0) {
-                        const totem = totems.find(t =>
+                        const isNearTotem = totems.some(t =>
                             Math.abs(t.latitude - lat) < 0.0001 && Math.abs(t.longitude - lng) < 0.0001
                         );
-                        if (!totem) {
-                            setWarningMessage('El camino debe comenzar desde un Tótem QR.');
+                        if (!isNearTotem) {
+                            setWarningMessage('El primer punto del camino debe ser un Tótem QR.');
                             setWarningModalOpen(true);
                             return;
                         }
                     }
+                    // Añadir el punto al camino (sin restricciones para puntos intermedios)
                     setCurrentPathPoints([...currentPathPoints, [lat, lng]]);
                 } else if (isCreatingTotem) {
-                    const { lat, lng } = e.latlng;
-                    const newTotem: Omit<TotemQR, 'id'> = {
-                        latitude: lat,
-                        longitude: lng,
-                        name: 'Nuevo Totem QR',
-                        description: '',
-                        imageUrls: [],
-                        campus: campus || '',
-                        status: 'Operativo',
-                    };
-                    setSelectedPoint({ ...newTotem, id: Date.now() } as TotemQR);
-                    setIsModalOpen(true);
+                    onCreateTotem(lat, lng);
                 } else if (isCreatingReception) {
-                    const { lat, lng } = e.latlng;
-                    const newReception: Omit<ReceptionQR, 'id'> = {
-                        latitude: lat,
-                        longitude: lng,
-                        name: 'Nuevo Espacio Seguro',
-                        description: '',
-                        imageUrls: [],
-                        campus: campus || '',
-                        schedule: '',
-                        status: 'Operativo',
-                    };
-                    setSelectedPoint({ ...newReception, id: Date.now() } as ReceptionQR);
-                    setIsModalOpen(true);
+                    onCreateReception(lat, lng);
                 }
             },
         });
@@ -128,6 +126,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             minZoom={10}
             zoomControl={false}
         >
+            <ZoomToInitialPoint initialPoint={initialPoint} />
             {!isCreatingPath && <SetView bounds={svgBounds} zoom={18} />}
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -188,10 +187,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     ))}
                 </>
             )}
-            {currentPathPoints.length > 1 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
+            {currentPathPoints.length > 0 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
             {showPaths &&
                 paths.map(path => (
-                    <Polyline key={path.id} positions={path.points.map((p: { latitude: any; longitude: any; }) => [p.latitude, p.longitude])} color="blue" weight={5} />
+                    <Polyline
+                        key={path.id}
+                        positions={path.points.map((p: { latitude: any; longitude: any }) => [p.latitude, p.longitude])}
+                        color="blue"
+                        weight={5}
+                    />
                 ))}
             <ZoomControl position="topright" />
         </MapContainer>

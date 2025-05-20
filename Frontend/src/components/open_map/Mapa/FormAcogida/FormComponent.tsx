@@ -30,6 +30,7 @@ const formSchema = z.object({
     lugar_incidente: z.string().min(2, { message: 'Por favor ingrese el lugar del incidente.' }),
     descripcion: z.string().min(10, { message: 'La descripción debe tener al menos 10 caracteres.' }),
     campus: z.string().optional(),
+    encargado_acogida: z.string().min(2, { message: 'El nombre del encargado debe tener al menos 2 caracteres.' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -59,22 +60,27 @@ const FormComponent: React.FC<FormComponentProps> = ({
             lugar_incidente: '',
             descripcion: '',
             campus: campus || '',
+            encargado_acogida: '',
         },
     });
 
     const [successModalOpen, setSuccessModalOpen] = React.useState(false);
+
     const onSubmit = async (data: FormData) => {
         setFormErrors({});
         try {
+            console.log('Enviando datos:', data); // Log para depuración
             const response = await axios.post('http://localhost:8000/api/denuncias/', data, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('access_token')}`,
                 },
             });
+            console.log('Respuesta del servidor:', response.data); // Log para depuración
             setSubmitted(true);
             setSuccessModalOpen(true);
         } catch (error: any) {
+            console.error('Error al enviar la denuncia:', error); // Log para depuración
             if (error.response) {
                 const serverErrors = error.response.data;
                 if (serverErrors && typeof serverErrors === 'object') {
@@ -202,6 +208,18 @@ const FormComponent: React.FC<FormComponentProps> = ({
                         form.formState.errors.descripcion?.message ||
                         form.getFieldState('descripcion').error?.message ||
                         'Incluya todos los detalles relevantes.'
+                    }
+                    fullWidth
+                    margin="normal"
+                    required
+                />
+                <TextField
+                    label="Nombre del Encargado de Acogida"
+                    {...form.register('encargado_acogida')}
+                    error={!!form.formState.errors.encargado_acogida || !!form.getFieldState('encargado_acogida').error}
+                    helperText={
+                        form.formState.errors.encargado_acogida?.message ||
+                        form.getFieldState('encargado_acogida').error?.message
                     }
                     fullWidth
                     margin="normal"

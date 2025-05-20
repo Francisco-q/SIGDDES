@@ -24,7 +24,7 @@ import {
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { fetchPaths, fetchReceptions, fetchTotems } from '../../../../services/apiService';
 import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
 import FormComponent from '../FormAcogida/FormComponent';
@@ -32,12 +32,9 @@ import InfoPunto from '../info_punto/InfoPunto';
 import MapComponent from '../map_components/MapComponent';
 import './OpenMap.css';
 
-// Esquema de validación para el formulario de denuncia
-
-
-
 const OpenMap: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +42,7 @@ const OpenMap: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
+  const [initialPoint, setInitialPoint] = useState<TotemQR | ReceptionQR | null>(null);
 
   const campusSvgMap: Record<string, string> = {
     talca: '/assets/Talca.svg',
@@ -95,6 +92,26 @@ const OpenMap: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [warningModalOpen]);
+
+  // Cargar punto inicial desde la URL
+  useEffect(() => {
+    const pointId = searchParams.get('pointId');
+    const pointType = searchParams.get('pointType');
+    if (pointId && pointType && campus) {
+      const fetchInitialPoint = async () => {
+        try {
+          const endpoint = pointType === 'totem' ? 'totems' : 'recepciones';
+          const response = await axios.get(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+          });
+          setInitialPoint(response.data);
+        } catch (err) {
+          setError('No se pudo cargar el punto QR especificado.');
+        }
+      };
+      fetchInitialPoint();
+    }
+  }, [searchParams, campus]);
 
   const refreshToken = async () => {
     try {
@@ -213,6 +230,117 @@ const OpenMap: React.FC = () => {
     setIsModalOpen(false);
     setSelectedPoint(null);
     setImageFiles([]);
+  };
+
+  // Dentro de OpenMap.tsx, agregar estas funciones después de las definiciones de estado:
+
+  const handleCreateTotem = async (lat: number, lng: number) => {
+    const newTotem = {
+      latitude: lat,
+      longitude: lng,
+      name: 'Nuevo Totem QR',
+      description: '',
+      imageUrls: [],
+      campus: campus || '',
+      status: 'Operativo',
+    };
+    try {
+      const response = await axios.post('http://localhost:8000/api/totems/', newTotem, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+      const createdTotem = response.data;
+      setTotems([...totems, createdTotem]);
+      setSelectedPoint(createdTotem);
+      setIsModalOpen(true);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        const newToken = await refreshToken();
+        if (newToken) {
+          try {
+            const response = await axios.post('http://localhost:8000/api/totems/', newTotem, {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
+            const createdTotem = response.data;
+            setTotems([...totems, createdTotem]);
+            setSelectedPoint(createdTotem);
+            setIsModalOpen(true);
+            return;
+          } catch (retryError) {
+            console.error('Error creating totem after refresh:', retryError);
+            setWarningMessage('No se pudo crear el Tótem QR tras reautenticación.');
+            setWarningModalOpen(true);
+          }
+        } else {
+          setWarningMessage('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          setWarningModalOpen(true);
+        }
+      } else {
+        console.error('Error al crear el tótem:', error);
+        setWarningMessage('No se pudo crear el Tótem QR.');
+        setWarningModalOpen(true);
+      }
+    }
+  };
+
+  const handleCreateReception = async (lat: number, lng: number) => {
+    const newReception = {
+      latitude: lat,
+      longitude: lng,
+      name: 'Nuevo Espacio Seguro',
+      description: '',
+      imageUrls: [],
+      campus: campus || '',
+      schedule: '',
+      status: 'Operativo',
+    };
+    try {
+      const response = await axios.post('http://localhost:8000/api/recepciones/', newReception, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+      const createdReception = response.data;
+      setReceptions([...receptions, createdReception]);
+      setSelectedPoint(createdReception);
+      setIsModalOpen(true);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        const newToken = await refreshToken();
+        if (newToken) {
+          try {
+            const response = await axios.post('http://localhost:8000/api/recepciones/', newReception, {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
+            const createdReception = response.data;
+            setReceptions([...receptions, createdReception]);
+            setSelectedPoint(createdReception);
+            setIsModalOpen(true);
+            return;
+          } catch (retryError) {
+            console.error('Error creating reception after refresh:', retryError);
+            setWarningMessage('No se pudo crear la Recepción QR tras reautenticación.');
+            setWarningModalOpen(true);
+          }
+        } else {
+          setWarningMessage('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          setWarningModalOpen(true);
+        }
+      } else {
+        console.error('Error al crear la recepción:', error);
+        setWarningMessage('No se pudo crear la Recepción QR.');
+        setWarningModalOpen(true);
+      }
+    }
   };
 
   const handleSavePoint = async (updatedPoint: TotemQR | ReceptionQR) => {
@@ -525,6 +653,9 @@ const OpenMap: React.FC = () => {
               setIsModalOpen={setIsModalOpen}
               role={role}
               mapaSrc={mapaSrc}
+              onCreateTotem={handleCreateTotem}
+              onCreateReception={handleCreateReception}
+              initialPoint={initialPoint}
               setWarningMessage={setWarningMessage}
               setWarningModalOpen={setWarningModalOpen}
             />

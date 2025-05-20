@@ -125,34 +125,66 @@ export default function DashboardDenuncias() {
                     overflowY: 'auto',
                     overflowX: 'hidden',
                     height: '100vh',
-                    p: 3,
+                    p: 0,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                 }}
             >
-                <Box sx={{ mb: 4, textAlign: 'center', width: '100%', maxWidth: 600 }}>
-                    <Typography variant="h5">Dashboard de Denuncias</Typography>
-                    <Typography variant="body2" color="textSecondary">
-                        Monitoreo y gestión de denuncias de género
-                    </Typography>
-                </Box>
 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, width: '100%', justifyContent: 'center', mb: 4 }}>
-                    <Card sx={{ flex: '1 1 100%', minWidth: 300, maxWidth: 800, margin: 'auto' }}>
+                    <Card sx={{ flex: '1 1 100%', minWidth: 300, maxWidth: 1400, margin: 'auto' }}>
                         <CardHeader
-                            title="Denuncias Recientes"
-                            subheader="Lista de las últimas denuncias registradas en el sistema"
+                            title="Casos Recientes"
+                            subheader="Lista de casos registrados en el sistema"
                             titleTypographyProps={{ textAlign: 'center' }}
                             subheaderTypographyProps={{ textAlign: 'center' }}
                         />
                         <CardContent>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center', width: '100%' }}>
+                                <Card sx={{ flex: '1 1 200px', minWidth: 200, maxWidth: 300 }}>
+                                    <CardHeader
+                                        title="Total Denuncias"
+                                        action={<FileTextIcon />}
+                                        titleTypographyProps={{ variant: 'subtitle2', textAlign: 'center' }}
+                                    />
+                                    <CardContent sx={{ textAlign: 'center' }}>
+                                        <Typography variant="h5">{denuncias.length}</Typography>
+                                        <Typography variant="caption" color="textSecondary">
+                                            {denuncias.filter(d => new Date(d.created_at).getMonth() === new Date().getMonth()).length} registradas este mes
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card sx={{ flex: '2 1 300px', minWidth: 300, maxWidth: 400 }}>
+                                    <CardHeader
+                                        title="Estadísticas por Tipo"
+                                        subheader="Distribución de denuncias según su categoría"
+                                        titleTypographyProps={{ textAlign: 'center' }}
+                                        subheaderTypographyProps={{ textAlign: 'center' }}
+                                    />
+                                    <CardContent>
+                                        {estadisticas.map((stat) => (
+                                            <Box key={stat.tipo} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                                <Typography sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{stat.tipo}</Typography>
+                                                <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.300', borderRadius: 4, overflow: 'hidden', mx: 2 }}>
+                                                    <Box sx={{ width: `${(stat.cantidad / Math.max(...estadisticas.map(s => s.cantidad))) * 100}%`, height: '100%', bgcolor: 'rose.600' }} />
+                                                </Box>
+                                                <Typography sx={{ width: 40, textAlign: 'right' }}>{stat.cantidad}</Typography>
+                                            </Box>
+                                        ))}
+                                    </CardContent>
+                                    <CardActions sx={{ justifyContent: 'center' }}>
+                                        <Button variant="outlined" size="small">Ver informe completo</Button>
+                                    </CardActions>
+                                </Card>
+                            </Box>
                             <Box
                                 sx={{
                                     display: 'flex',
                                     flexDirection: { xs: 'column', sm: 'row' },
                                     gap: 2,
                                     mb: 2,
+                                    mt: 4,
                                     justifyContent: 'center',
                                     alignItems: { xs: 'stretch', sm: 'center' },
                                 }}
@@ -160,7 +192,7 @@ export default function DashboardDenuncias() {
                                 <TextField
                                     variant="outlined"
                                     size="small"
-                                    placeholder="Buscar denuncia..."
+                                    placeholder="Buscar caso..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     sx={{
@@ -231,7 +263,7 @@ export default function DashboardDenuncias() {
                                                 </Box>
                                                 <Box sx={{ flex: '1 1 0', minWidth: 100, textAlign: { xs: 'left', sm: 'center' } }}>
                                                     <Typography variant="caption" color="textSecondary">
-                                                        Denunciante
+                                                        Afectado
                                                     </Typography>
                                                     <Typography variant="body2">{`${denuncia.nombre} ${denuncia.apellido}`}</Typography>
                                                 </Box>
@@ -241,7 +273,7 @@ export default function DashboardDenuncias() {
                                 ))}
                                 {paginatedDenuncias.length === 0 && (
                                     <Typography sx={{ textAlign: 'center', py: 4, color: 'textSecondary' }}>
-                                        No hay denuncias para mostrar
+                                        No hay casos para mostrar
                                     </Typography>
                                 )}
                             </Box>
@@ -259,44 +291,6 @@ export default function DashboardDenuncias() {
                         </CardContent>
                         <CardActions sx={{ justifyContent: 'center' }}>
                             <Button variant="outlined" size="small">Ver todas las denuncias</Button>
-                        </CardActions>
-                    </Card>
-                </Box>
-
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center', width: '100%' }}>
-                    <Card sx={{ flex: '1 1 200px', minWidth: 200, maxWidth: 300 }}>
-                        <CardHeader
-                            title="Total Denuncias"
-                            action={<FileTextIcon />}
-                            titleTypographyProps={{ variant: 'subtitle2', textAlign: 'center' }}
-                        />
-                        <CardContent sx={{ textAlign: 'center' }}>
-                            <Typography variant="h5">{denuncias.length}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                                {denuncias.filter(d => new Date(d.created_at).getMonth() === new Date().getMonth()).length} registradas este mes
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                    <Card sx={{ flex: '2 1 300px', minWidth: 300, maxWidth: 400 }}>
-                        <CardHeader
-                            title="Estadísticas por Tipo"
-                            subheader="Distribución de denuncias según su categoría"
-                            titleTypographyProps={{ textAlign: 'center' }}
-                            subheaderTypographyProps={{ textAlign: 'center' }}
-                        />
-                        <CardContent>
-                            {estadisticas.map((stat) => (
-                                <Box key={stat.tipo} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    <Typography sx={{ width: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{stat.tipo}</Typography>
-                                    <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.300', borderRadius: 4, overflow: 'hidden', mx: 2 }}>
-                                        <Box sx={{ width: `${(stat.cantidad / Math.max(...estadisticas.map(s => s.cantidad))) * 100}%`, height: '100%', bgcolor: 'rose.600' }} />
-                                    </Box>
-                                    <Typography sx={{ width: 40, textAlign: 'right' }}>{stat.cantidad}</Typography>
-                                </Box>
-                            ))}
-                        </CardContent>
-                        <CardActions sx={{ justifyContent: 'center' }}>
-                            <Button variant="outlined" size="small">Ver informe completo</Button>
                         </CardActions>
                     </Card>
                 </Box>

@@ -16,7 +16,7 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
       {/* Dashboard */}
       <Box
         sx={{
-          mt: 10,
+          mt: 1,
           ml: 2,
           mr: 2,
           mb: 2,

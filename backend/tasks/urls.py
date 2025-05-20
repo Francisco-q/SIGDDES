@@ -10,6 +10,9 @@ router.register(r'puntos', PointViewSet, basename='puntos')
 router.register(r'caminos', PathViewSet, basename='caminos')
 router.register(r'upload', ImageUploadView, basename='upload')
 router.register(r'denuncias', DenunciaViewSet, basename='denuncias')
+router.register(r'usuario', PerfilUsuarioViewSet, basename='usuario')
+router.register(r'images', ImageListView, basename='images')
+router.register(r'upload', ImageUploadViewSet, basename='upload')
 
 urlpatterns = [
     path('', home),

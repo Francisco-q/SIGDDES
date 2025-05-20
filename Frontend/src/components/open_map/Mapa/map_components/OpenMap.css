@@ -10,6 +10,11 @@
     color: red;
 }
 
+.openmap-loading-point {
+    padding: 16px;
+    text-align: center;
+}
+
 /* Estilos para las pestañas */
 .openmap-tabs {
     z-index: 1000;

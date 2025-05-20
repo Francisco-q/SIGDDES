@@ -12,11 +12,12 @@ import {
   Typography,
 } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 import { ReceptionQR, TotemQR } from '../../../../types/types';
+import './InfoPunto.css';
 
 interface InfoPuntoProps {
   open: boolean;
@@ -48,9 +49,15 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [openImageModal, setOpenImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [loadingQr, setLoadingQr] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const isTotem = !!punto && !('schedule' in punto);
   const isEditable = role === 'admin' || role === 'superuser';
+  const pointType = isTotem ? 'totem' : 'reception';
 
   useEffect(() => {
     if (punto && open) {
@@ -58,19 +65,37 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
       setDescription(punto.description || '');
       setSchedule(('schedule' in punto) ? (punto as ReceptionQR).schedule || '' : '');
       setStatus(punto.status || 'Operativo');
+      setQrImage(punto.qr_image || null);
       setErrors({});
       setIsEditing(false);
       fetchImages();
     }
   }, [punto, open]);
 
+  useEffect(() => {
+    const checkScrollable = () => {
+      if (contentRef.current) {
+        const { scrollHeight, clientHeight } = contentRef.current;
+        setIsScrollable(scrollHeight > clientHeight);
+      }
+    };
+    checkScrollable();
+    window.addEventListener('resize', checkScrollable);
+    return () => window.removeEventListener('resize', checkScrollable);
+  }, [isEditing, images, newImagePreviews, qrImage]);
+
+  useEffect(() => {
+    if (punto && open && typeof punto.id === 'number') {
+      fetchImages();
+    }
+  }, [punto, open]);
   const fetchImages = async () => {
     if (!punto) return;
     try {
       const response = await axios.get(`http://localhost:8000/api/images/`, {
         params: {
           point_id: punto.id,
-          point_type: isTotem ? 'totem' : 'reception',
+          point_type: pointType,
           campus: punto.campus,
         },
         headers: {
@@ -94,6 +119,36 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleGenerateQr = async () => {
+    if (!punto) return;
+    setLoadingQr(true);
+    setQrError(null);
+    try {
+      const endpoint = isTotem ? 'totems' : 'recepciones';
+      const response = await axios.post(
+        `http://localhost:8000/api/${endpoint}/${punto.id}/generate_qr/`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+        }
+      );
+      setQrImage(response.data.qr_image);
+    } catch (err: any) {
+      setQrError('No se pudo generar el código QR.');
+    } finally {
+      setLoadingQr(false);
+    }
+  };
+
+  const handleDownloadQr = () => {
+    if (qrImage && punto) {
+      const link = document.createElement('a');
+      link.href = qrImage;
+      link.download = `qr_${pointType}_${punto.id}.png`;
+      link.click();
+    }
+  };
+
   const handleSave = async () => {
     if (!punto || !validate()) return;
 
@@ -104,6 +159,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
       status,
       ...(isTotem ? {} : { schedule: schedule.trim() }),
       imageUrls: images,
+      qr_image: qrImage,
     };
 
     onSave(updatedPoint);
@@ -119,6 +175,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
       setDescription(punto.description || '');
       setSchedule(('schedule' in punto) ? (punto as ReceptionQR).schedule || '' : '');
       setStatus(punto.status || 'Operativo');
+      setQrImage(punto.qr_image || null);
       setErrors({});
       setNewImagePreviews([]);
     }
@@ -140,6 +197,17 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
       setNewImagePreviews(previews);
       console.log('Previsualizaciones generadas:', previews);
     }
+  };
+
+  const sliderSettings = {
+    dots: images.length > 1, // Disable dots for single image
+    infinite: images.length > 1, // Disable infinite loop for single image
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: images.length > 1, // Disable arrows for single image
+    accessibility: images.length > 1, // Disable keyboard navigation for single image
+    adaptiveHeight: true, // Adjust height to content
   };
 
   return (
@@ -176,6 +244,8 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
         </IconButton>
       </DialogTitle>
       <DialogContent
+        ref={contentRef}
+        className={isScrollable ? 'scrollable' : ''}
         sx={{
           padding: '24px',
           maxHeight: '60vh',
@@ -217,7 +287,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                     <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
                       Nuevas imágenes:
                     </Typography>
-                    <Slider dots={true} infinite={true} speed={500} slidesToShow={1} slidesToScroll={1}>
+                    <Slider {...sliderSettings}>
                       {newImagePreviews.map((preview, index) => (
                         <Box key={preview || `preview-${index}`} sx={{ display: 'flex', justifyContent: 'center' }}>
                           <img
@@ -241,6 +311,50 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                   onChange={handleFileChange}
                   style={{ marginTop: '16px', marginBottom: '16px' }}
                 />
+                {isEditable && (
+                  <Box className="qr-container" sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
+                      Código QR
+                    </Typography>
+                    {qrError && (
+                      <Typography color="error" sx={{ mb: 1 }}>
+                        {qrError}
+                      </Typography>
+                    )}
+                    {qrImage ? (
+                      <Box className="qr-image-container">
+                        <img
+                          src={qrImage}
+                          alt={`Código QR para ${punto.name}`}
+                          className="qr-image"
+                          onClick={() => {
+                            setSelectedImage(qrImage);
+                            setOpenImageModal(true);
+                          }}
+                        />
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={handleDownloadQr}
+                          disabled={loadingQr}
+                          sx={{ mt: 1, borderRadius: '8px', textTransform: 'none' }}
+                        >
+                          Descargar QR
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleGenerateQr}
+                        disabled={loadingQr}
+                        sx={{ borderRadius: '8px', textTransform: 'none' }}
+                      >
+                        Generar QR
+                      </Button>
+                    )}
+                  </Box>
+                )}
                 <TextField
                   label="Nombre"
                   value={name}
@@ -308,6 +422,32 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
                   <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
                     No hay imágenes disponibles
                   </Typography>
+                )}
+                {qrImage && (
+                  <Box className="qr-container" sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: 'text.secondary' }}>
+                      Código QR:
+                    </Typography>
+                    <Box className="qr-image-container">
+                      <img
+                        src={qrImage}
+                        alt={`Código QR para ${punto.name}`}
+                        className="qr-image"
+                        onClick={() => {
+                          setSelectedImage(qrImage);
+                          setOpenImageModal(true);
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleDownloadQr}
+                        sx={{ mt: 1, borderRadius: '8px', textTransform: 'none' }}
+                      >
+                        Descargar QR
+                      </Button>
+                    </Box>
+                  </Box>
                 )}
                 <Typography variant="subtitle1" sx={{ fontWeight: 500, mt: 2, mb: 0.5, color: 'text.secondary' }}>
                   Nombre:
@@ -401,16 +541,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({
           </>
         )}
       </DialogActions>
-      <Dialog open={openImageModal} onClose={() => setOpenImageModal(false)} maxWidth="md">
-        <DialogContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          {selectedImage && (
-            <img src={selectedImage} alt="Imagen ampliada" style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenImageModal(false)}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
+
     </Dialog>
   );
 };

@@ -17,5 +17,11 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  background-color: rgb(238, 219, 255);
+  background-color: var(--color-1);
+
+  --color-1: #703e98;
+  --color-2: #a77ccb;
+  --color-3: #d3a4e0;
+  --color-4: #ffb3c1;
+  --color-5: #ff6e61;
 }

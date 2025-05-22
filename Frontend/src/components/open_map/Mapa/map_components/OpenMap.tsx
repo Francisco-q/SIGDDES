@@ -21,11 +21,11 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
-import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { fetchPaths, fetchReceptions, fetchTotems } from '../../../../services/apiService';
+import { fetchPaths, fetchReceptions, fetchTotems, uploadImages } from '../../../../services/apiService';
+import axiosInstance from '../../../../services/axiosInstance';
 import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
 import FormComponent from '../FormAcogida/FormComponent';
 import InfoPunto from '../info_punto/InfoPunto';
@@ -101,9 +101,7 @@ const OpenMap: React.FC = () => {
       const fetchInitialPoint = async () => {
         try {
           const endpoint = pointType === 'totem' ? 'totems' : 'recepciones';
-          const response = await axios.get(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
-          });
+          const response = await axiosInstance.get(`${endpoint}/${pointId}/`);
           setInitialPoint(response.data);
         } catch (err) {
           setError('No se pudo cargar el punto QR especificado.');
@@ -112,25 +110,6 @@ const OpenMap: React.FC = () => {
       fetchInitialPoint();
     }
   }, [searchParams, campus]);
-
-  const refreshToken = async () => {
-    try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) throw new Error('No refresh token available');
-      const response = await axios.post('http://localhost:8000/api/token/refresh/', {
-        refresh: refreshToken,
-      });
-      localStorage.setItem('access_token', response.data.access);
-      return response.data.access;
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      setIsAuthenticated(false);
-      setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
-      return null;
-    }
-  };
 
   useEffect(() => {
     const validateToken = async () => {
@@ -143,29 +122,12 @@ const OpenMap: React.FC = () => {
       }
 
       try {
-        const response = await axios.get('http://localhost:8000/api/user/current_user/', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        const response = await axiosInstance.get('user/current_user/');
         setRole(response.data.role);
         setIsAuthenticated(true);
         setError(null);
       } catch (error: any) {
-        if (error.response?.status === 401) {
-          const newToken = await refreshToken();
-          if (newToken) {
-            try {
-              const response = await axios.get('http://localhost:8000/api/user/current_user/', {
-                headers: { Authorization: `Bearer ${newToken}` },
-              });
-              setRole(response.data.role);
-              setIsAuthenticated(true);
-              setError(null);
-              return;
-            } catch (retryError) {
-              console.error('Error validating token after refresh:', retryError);
-            }
-          }
-        }
+        console.error('Error validating token:', error);
         setIsAuthenticated(false);
         setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
       } finally {
@@ -190,25 +152,6 @@ const OpenMap: React.FC = () => {
           setPaths(pathsData);
           setError(null);
         } catch (error: any) {
-          if (error.response?.status === 401) {
-            const newToken = await refreshToken();
-            if (newToken) {
-              try {
-                const [totemsData, receptionsData, pathsData] = await Promise.all([
-                  fetchTotems(campus),
-                  fetchReceptions(campus),
-                  fetchPaths(campus),
-                ]);
-                setTotems(totemsData);
-                setReceptions(receptionsData);
-                setPaths(pathsData);
-                setError(null);
-                return;
-              } catch (retryError) {
-                console.error('Error fetching data after refresh:', retryError);
-              }
-            }
-          }
           console.error('Error fetching data:', error);
           setError('No se pudieron cargar los datos del mapa. Por favor, intenta de nuevo.');
         }
@@ -232,8 +175,6 @@ const OpenMap: React.FC = () => {
     setImageFiles([]);
   };
 
-  // Dentro de OpenMap.tsx, agregar estas funciones después de las definiciones de estado:
-
   const handleCreateTotem = async (lat: number, lng: number) => {
     const newTotem = {
       latitude: lat,
@@ -245,46 +186,15 @@ const OpenMap: React.FC = () => {
       status: 'Operativo',
     };
     try {
-      const response = await axios.post('http://localhost:8000/api/totems/', newTotem, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      const response = await axiosInstance.post('totems/', newTotem);
       const createdTotem = response.data;
       setTotems([...totems, createdTotem]);
       setSelectedPoint(createdTotem);
       setIsModalOpen(true);
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            const response = await axios.post('http://localhost:8000/api/totems/', newTotem, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            const createdTotem = response.data;
-            setTotems([...totems, createdTotem]);
-            setSelectedPoint(createdTotem);
-            setIsModalOpen(true);
-            return;
-          } catch (retryError) {
-            console.error('Error creating totem after refresh:', retryError);
-            setWarningMessage('No se pudo crear el Tótem QR tras reautenticación.');
-            setWarningModalOpen(true);
-          }
-        } else {
-          setWarningMessage('Sesión expirada. Por favor, inicia sesión nuevamente.');
-          setWarningModalOpen(true);
-        }
-      } else {
-        console.error('Error al crear el tótem:', error);
-        setWarningMessage('No se pudo crear el Tótem QR.');
-        setWarningModalOpen(true);
-      }
+      console.error('Error al crear el tótem:', error);
+      setWarningMessage('No se pudo crear el Tótem QR.');
+      setWarningModalOpen(true);
     }
   };
 
@@ -300,46 +210,15 @@ const OpenMap: React.FC = () => {
       status: 'Operativo',
     };
     try {
-      const response = await axios.post('http://localhost:8000/api/recepciones/', newReception, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      const response = await axiosInstance.post('recepciones/', newReception);
       const createdReception = response.data;
       setReceptions([...receptions, createdReception]);
       setSelectedPoint(createdReception);
       setIsModalOpen(true);
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            const response = await axios.post('http://localhost:8000/api/recepciones/', newReception, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            const createdReception = response.data;
-            setReceptions([...receptions, createdReception]);
-            setSelectedPoint(createdReception);
-            setIsModalOpen(true);
-            return;
-          } catch (retryError) {
-            console.error('Error creating reception after refresh:', retryError);
-            setWarningMessage('No se pudo crear la Recepción QR tras reautenticación.');
-            setWarningModalOpen(true);
-          }
-        } else {
-          setWarningMessage('Sesión expirada. Por favor, inicia sesión nuevamente.');
-          setWarningModalOpen(true);
-        }
-      } else {
-        console.error('Error al crear la recepción:', error);
-        setWarningMessage('No se pudo crear la Recepción QR.');
-        setWarningModalOpen(true);
-      }
+      console.error('Error al crear la recepción:', error);
+      setWarningMessage('No se pudo crear la Recepción QR.');
+      setWarningModalOpen(true);
     }
   };
 
@@ -360,24 +239,11 @@ const OpenMap: React.FC = () => {
     }
 
     const isTotem = !('schedule' in updatedPoint);
+
     try {
       let imageUrls = Array.isArray(updatedPoint.imageUrls) ? updatedPoint.imageUrls : [];
       if (imageFiles.length > 0) {
-        const newImageUrls: string[] = [];
-        for (const file of imageFiles) {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('point_id', updatedPoint.id.toString());
-          formData.append('point_type', isTotem ? 'totem' : 'reception');
-          formData.append('campus', updatedPoint.campus);
-          const response = await axios.post('http://localhost:8000/api/image-upload/', formData, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          newImageUrls.push(response.data.image);
-        }
+        const newImageUrls = await uploadImages(imageFiles, updatedPoint.id, isTotem ? 'totem' : 'reception', updatedPoint.campus);
         imageUrls = [...imageUrls, ...newImageUrls];
       }
 
@@ -390,12 +256,7 @@ const OpenMap: React.FC = () => {
       };
 
       const endpoint = isTotem ? 'totems' : 'recepciones';
-      const response = await axios.put(`http://localhost:8000/api/${endpoint}/${updatedPoint.id}/`, pointData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      const response = await axiosInstance.put(`${endpoint}/${updatedPoint.id}/`, pointData);
 
       if (isTotem) {
         setTotems(totems.map(t => (t.id === updatedPoint.id ? response.data as TotemQR : t)));
@@ -405,8 +266,8 @@ const OpenMap: React.FC = () => {
 
       handleCloseModal();
     } catch (error: any) {
-      console.error('Error saving point:', error.response ? error.response.data : error.message);
-      const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo guardar el punto.';
+      console.error('Error al guardar el punto:', error);
+      const errorMessage = error.response?.data?.detail || 'No se pudo guardar el punto.';
       setError(errorMessage);
     }
   };
@@ -416,11 +277,7 @@ const OpenMap: React.FC = () => {
 
     try {
       const endpoint = isTotem ? 'totems' : 'recepciones';
-      await axios.delete(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      await axiosInstance.delete(`${endpoint}/${pointId}/`);
 
       if (isTotem) {
         setTotems(totems.filter(t => t.id !== pointId));
@@ -430,42 +287,18 @@ const OpenMap: React.FC = () => {
 
       handleCloseModal();
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            const endpoint = isTotem ? 'totems' : 'recepciones';
-            await axios.delete(`http://localhost:8000/api/${endpoint}/${pointId}/`, {
-              headers: {
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-
-            if (isTotem) {
-              setTotems(totems.filter(t => t.id !== pointId));
-            } else {
-              setReceptions(receptions.filter(r => r.id !== pointId));
-            }
-
-            handleCloseModal();
-            return;
-          } catch (retryError) {
-            console.error('Error deleting point after refresh:', retryError);
-            setError('Error al eliminar el punto tras reautenticación.');
-          }
-        }
-      } else if (error.response?.status === 404) {
+      console.error('Error deleting point:', error);
+      if (error.response?.status === 404) {
         if (isTotem) {
           setTotems(totems.filter(t => t.id !== pointId));
         } else {
           setReceptions(receptions.filter(r => r.id !== pointId));
         }
         handleCloseModal();
-        return;
+      } else {
+        const errorMessage = error.response?.data?.detail || 'No se pudo eliminar el punto.';
+        setError(errorMessage);
       }
-      console.error('Error deleting point:', error);
-      const errorMessage = error.response?.data?.detail || 'No se pudo eliminar el punto.';
-      setError(errorMessage);
     }
   };
 
@@ -529,12 +362,7 @@ const OpenMap: React.FC = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:8000/api/caminos/', pathData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      const response = await axiosInstance.post('caminos/', pathData);
       setPaths((prev: Path[]) => [...prev, response.data as Path]);
       setCurrentPathPoints([]);
       setIsCreatingPath(false);
@@ -542,33 +370,8 @@ const OpenMap: React.FC = () => {
       setPathName('');
     } catch (error: any) {
       console.error('Error saving path:', error);
-      if (error.response?.status === 401) {
-        const newToken = await refreshToken();
-        if (newToken) {
-          try {
-            const response = await axios.post('http://localhost:8000/api/caminos/', pathData, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            setPaths(prev => [...prev, response.data as Path]);
-            setCurrentPathPoints([]);
-            setIsCreatingPath(false);
-            setPathSaved(true);
-            setPathName('');
-            return;
-          } catch (retryError) {
-            console.error('Error saving path after refresh:', retryError);
-            setError('Error al guardar el camino tras reautenticación.');
-          }
-        } else {
-          setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
-        }
-      } else {
-        const errorMessage = error.response?.data?.detail || Object.values(error.response?.data || {}).join(' ') || 'No se pudo guardar el camino.';
-        setError(errorMessage);
-      }
+      const errorMessage = error.response?.data?.detail || 'No se pudo guardar el camino.';
+      setError(errorMessage);
       setIsConfirmModalOpen(false);
       setPathName('');
     }

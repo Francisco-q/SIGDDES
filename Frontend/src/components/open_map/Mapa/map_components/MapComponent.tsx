@@ -41,7 +41,30 @@ interface MapComponentProps {
     initialPoint: TotemQR | ReceptionQR | null;
     setWarningMessage: (message: string) => void;
     setWarningModalOpen: (open: boolean) => void;
+    onPathClick: (path: Path) => void; // Nueva prop para manejar clics en caminos
 }
+
+// Componente para hacer las polilíneas clicables
+const ClickpolylinesClickHandler: React.FC<{
+    positions: [number, number][];
+    path: Path;
+    onClick: (path: Path) => void;
+}> = ({ positions, path, onClick }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        const polyline = L.polyline(positions, { color: 'blue', weight: 5 });
+        polyline.addTo(map);
+        polyline.on('click', () => onClick(path));
+
+        return () => {
+            polyline.off('click');
+            polyline.removeFrom(map);
+        };
+    }, [positions, path, onClick, map]);
+
+    return null;
+};
 
 const MapComponent: React.FC<MapComponentProps> = ({
     campus,
@@ -63,6 +86,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     initialPoint,
     setWarningMessage,
     setWarningModalOpen,
+    onPathClick,
 }) => {
     const svgBounds: [[number, number], [number, number]] = [
         [51.505, -0.09],
@@ -90,7 +114,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 const { lat, lng } = e.latlng;
 
                 if (isCreatingPath) {
-                    // Validar solo el primer punto (debe estar cerca de un tótem)
                     if (currentPathPoints.length === 0) {
                         const isNearTotem = totems.some(t =>
                             Math.abs(t.latitude - lat) < 0.0001 && Math.abs(t.longitude - lng) < 0.0001
@@ -101,7 +124,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                             return;
                         }
                     }
-                    // Añadir el punto al camino (sin restricciones para puntos intermedios)
                     setCurrentPathPoints([...currentPathPoints, [lat, lng]]);
                 } else if (isCreatingTotem) {
                     onCreateTotem(lat, lng);
@@ -190,11 +212,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
             {currentPathPoints.length > 0 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
             {showPaths &&
                 paths.map(path => (
-                    <Polyline
+                    <ClickpolylinesClickHandler
                         key={path.id}
                         positions={path.points.map((p: { latitude: any; longitude: any }) => [p.latitude, p.longitude])}
-                        color="blue"
-                        weight={5}
+                        path={path}
+                        onClick={onPathClick}
                     />
                 ))}
             <ZoomControl position="topright" />

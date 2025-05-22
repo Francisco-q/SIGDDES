@@ -150,6 +150,9 @@ export const deleteReception = async (id: number): Promise<void> => {
   await api.delete(`recepciones/${id}/`);
 };
 
+export const deletePath = async (pathId: number) => {
+  await axiosInstance.delete(`caminos/${pathId}/`);
+};
 export const uploadImage = async (formData: FormData): Promise<{ image: string }> => {
   const response = await api.post('image-upload/', formData, {
     headers: {

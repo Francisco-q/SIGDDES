@@ -24,7 +24,7 @@ import {
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { fetchPaths, fetchReceptions, fetchTotems, uploadImages } from '../../../../services/apiService';
+import { deletePath, fetchPaths, fetchReceptions, fetchTotems, uploadImages } from '../../../../services/apiService';
 import axiosInstance from '../../../../services/axiosInstance';
 import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
 import FormComponent from '../FormAcogida/FormComponent';
@@ -83,6 +83,8 @@ const OpenMap: React.FC = () => {
   const [warningMessage, setWarningMessage] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [selectedPath, setSelectedPath] = useState<Path | null>(null); // Estado para el camino seleccionado
+  const [isPathModalOpen, setIsPathModalOpen] = useState(false); // Estado para el modal de eliminación de caminos
 
   useEffect(() => {
     if (warningModalOpen) {
@@ -93,7 +95,6 @@ const OpenMap: React.FC = () => {
     }
   }, [warningModalOpen]);
 
-  // Cargar punto inicial desde la URL
   useEffect(() => {
     const pointId = searchParams.get('pointId');
     const pointType = searchParams.get('pointType');
@@ -400,6 +401,28 @@ const OpenMap: React.FC = () => {
     setTabValue(newValue);
   };
 
+  // Función para manejar el clic en un camino
+  const handlePathClick = (path: Path) => {
+    if (!['admin', 'superuser'].includes(role as string)) return;
+    setSelectedPath(path);
+    setIsPathModalOpen(true);
+  };
+
+  // Función para eliminar un camino
+  const handleDeletePath = async (pathId: number | undefined) => {
+    if (!pathId || !['admin', 'superuser'].includes(role as string)) return;
+
+    try {
+      await deletePath(pathId);
+      setPaths(paths.filter(p => p.id !== pathId));
+      setIsPathModalOpen(false);
+      setSelectedPath(null);
+    } catch (error: any) {
+      console.error('Error deleting path:', error);
+      setError('No se pudo eliminar el camino.');
+    }
+  };
+
   if (loading) {
     return <Typography>Validando sesión...</Typography>;
   }
@@ -461,6 +484,7 @@ const OpenMap: React.FC = () => {
               initialPoint={initialPoint}
               setWarningMessage={setWarningMessage}
               setWarningModalOpen={setWarningModalOpen}
+              onPathClick={handlePathClick} // Pasamos la función handlePathClick
             />
           ) : (
             <Box className="openmap-error">
@@ -664,6 +688,22 @@ const OpenMap: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setWarningModalOpen(false)} color="primary">
             Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal para eliminar caminos */}
+      <Dialog open={isPathModalOpen} onClose={() => setIsPathModalOpen(false)}>
+        <DialogTitle>Eliminar Camino: {selectedPath?.name}</DialogTitle>
+        <DialogContent>
+          <Typography>¿Estás seguro de que deseas eliminar este camino?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsPathModalOpen(false)} color="secondary">
+            Cancelar
+          </Button>
+          <Button onClick={() => handleDeletePath(selectedPath?.id)} color="primary">
+            Eliminar
           </Button>
         </DialogActions>
       </Dialog>

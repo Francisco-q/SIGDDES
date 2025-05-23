@@ -43,6 +43,7 @@ const OpenMap: React.FC = () => {
   const [svgError, setSvgError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [initialPoint, setInitialPoint] = useState<TotemQR | ReceptionQR | null>(null);
+  const [showPointNames, setShowPointNames] = useState(false);
 
   const campusSvgMap: Record<string, string> = {
     talca: '/assets/Talca.svg',
@@ -485,6 +486,7 @@ const OpenMap: React.FC = () => {
               setWarningMessage={setWarningMessage}
               setWarningModalOpen={setWarningModalOpen}
               onPathClick={handlePathClick} // Pasamos la función handlePathClick
+              showPointNames={showPointNames}
             />
           ) : (
             <Box className="openmap-error">
@@ -556,6 +558,17 @@ const OpenMap: React.FC = () => {
                 aria-label={isCreatingPath ? 'Cancelar Crear Camino' : 'Crear Camino'}
               >
                 {isCreatingPath ? <CancelIcon /> : <RouteIcon />}
+              </Button>
+            </Tooltip>
+            <Tooltip title={showPointNames ? 'Ocultar Nombres de Puntos' : 'Mostrar Nombres de Puntos'}>
+              <Button
+                onClick={() => setShowPointNames(!showPointNames)}
+                variant="contained"
+                color={showPointNames ? 'secondary' : 'primary'}
+                className="openmap-button"
+                aria-label={showPointNames ? 'Ocultar Nombres de Puntos' : 'Mostrar Nombres de Puntos'}
+              >
+                {showPointNames ? <VisibilityOffIcon /> : <VisibilityIcon />}
               </Button>
             </Tooltip>
 

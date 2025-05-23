@@ -41,7 +41,8 @@ interface MapComponentProps {
     initialPoint: TotemQR | ReceptionQR | null;
     setWarningMessage: (message: string) => void;
     setWarningModalOpen: (open: boolean) => void;
-    onPathClick: (path: Path) => void; // Nueva prop para manejar clics en caminos
+    onPathClick: (path: Path) => void;
+    showPointNames: boolean; // Add this prop
 }
 
 // Componente para hacer las polilíneas clicables
@@ -66,6 +67,24 @@ const ClickpolylinesClickHandler: React.FC<{
     return null;
 };
 
+const createLabelIcon = (icon: L.Icon, name: string) => {
+    return L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+      <div style="position: relative; text-align: center;">
+        <img src="${icon.options.iconUrl}" style="width: ${(icon.options.iconSize! as [number, number])[0]}px; height: ${(icon.options.iconSize! as [number, number])[1]}px; margin-bottom: 5px;" />
+        <div style="color: #000; font-size: 12px; font-weight: bold; background: rgba(197, 188, 188, 0.7); padding: 2px 5px; border-radius: 3px; width: 4vh;">
+          ${name}
+        </div>
+      </div>
+    `,
+        iconSize: [(icon.options.iconSize! as [number, number])[0], (icon.options.iconSize! as [number, number])[1] + 20], // Increase height to accommodate label
+        iconAnchor: [(icon.options.iconAnchor! as [number, number])[0], (icon.options.iconAnchor! as [number, number])[1] + 10], // Adjust anchor to center the icon+label
+        shadowUrl: icon.options.shadowUrl,
+        shadowSize: icon.options.shadowSize,
+    });
+};
+
 const MapComponent: React.FC<MapComponentProps> = ({
     campus,
     totems,
@@ -87,6 +106,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setWarningMessage,
     setWarningModalOpen,
     onPathClick,
+    showPointNames,
 }) => {
     const svgBounds: [[number, number], [number, number]] = [
         [51.505, -0.09],
@@ -134,7 +154,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         });
         return null;
     };
-
     const handlePointClick = (point: TotemQR | ReceptionQR) => {
         setSelectedPoint(point);
         setIsModalOpen(true);
@@ -195,7 +214,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         <Marker
                             key={totem.id}
                             position={[totem.latitude, totem.longitude]}
-                            icon={totemIcon}
+                            icon={showPointNames ? createLabelIcon(totemIcon, totem.name) : totemIcon}
                             eventHandlers={{ click: () => handlePointClick(totem) }}
                         />
                     ))}
@@ -203,7 +222,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         <Marker
                             key={reception.id}
                             position={[reception.latitude, reception.longitude]}
-                            icon={receptionIcon}
+                            icon={showPointNames ? createLabelIcon(receptionIcon, reception.name) : receptionIcon}
                             eventHandlers={{ click: () => handlePointClick(reception) }}
                         />
                     ))}

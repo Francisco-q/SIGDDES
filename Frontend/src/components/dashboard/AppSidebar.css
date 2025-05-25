@@ -1,0 +1,356 @@
+/* Estilos generales del sidebar */
+.app-sidebar-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #f9f5ff;
+    transition: width 0.3s ease;
+}
+
+/* Header del sidebar */
+.app-sidebar-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #6200ea;
+    color: white;
+    transition: padding 0.3s ease;
+    position: relative;
+}
+
+.app-sidebar-header.collapsed {
+    padding: 8px;
+}
+
+.app-sidebar-header.expanded {
+    padding: 24px;
+}
+
+/* Icono toggle de la universidad */
+.app-sidebar-logo {
+    background-color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 16px;
+}
+
+.app-sidebar-logo.collapsed {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+}
+
+.app-sidebar-logo.expanded {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+}
+
+.app-sidebar-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.app-sidebar-logo:active {
+    transform: scale(0.95);
+}
+
+.app-sidebar-logo-icon {
+    color: #6200ea;
+    transition: font-size 0.3s ease;
+}
+
+.app-sidebar-logo-icon.collapsed {
+    font-size: 24px;
+}
+
+.app-sidebar-logo-icon.expanded {
+    font-size: 32px;
+}
+
+/* Texto del header */
+.app-sidebar-header-text {
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.app-sidebar-title {
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.app-sidebar-subtitle {
+    opacity: 0.8;
+    text-align: center;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* Secciones del sidebar */
+.app-sidebar-section {
+    padding: 8px;
+}
+
+.app-sidebar-section.expanded {
+    padding: 16px;
+}
+
+.app-sidebar-section-title {
+    padding-left: 16px;
+    margin-bottom: 8px;
+    color: #6200ea;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+}
+
+/* Cards contenedoras */
+.app-sidebar-card {
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Botones de lista */
+.app-sidebar-list-button {
+    border-radius: 12px;
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+}
+
+.app-sidebar-list-button.collapsed {
+    justify-content: center;
+    padding: 8px;
+}
+
+.app-sidebar-list-button.expanded {
+    justify-content: flex-start;
+    padding: 8px 16px;
+}
+
+.app-sidebar-list-button:hover {
+    background-color: rgba(98, 0, 234, 0.04);
+}
+
+.app-sidebar-list-button.selected {
+    background-color: rgba(98, 0, 234, 0.08);
+}
+
+.app-sidebar-list-button.selected:hover {
+    background-color: rgba(98, 0, 234, 0.12);
+}
+
+/* Iconos de lista */
+.app-sidebar-list-icon {
+    color: #6200ea;
+}
+
+.app-sidebar-list-icon.collapsed {
+    min-width: auto;
+}
+
+.app-sidebar-list-icon.expanded {
+    min-width: 56px;
+}
+
+/* Badge de notificaciones */
+.app-sidebar-badge {
+    font-size: 0.6rem;
+    height: 16px;
+    min-width: 16px;
+}
+
+.app-sidebar-badge.expanded {
+    font-size: 0.7rem;
+    height: 18px;
+    min-width: 18px;
+}
+
+/* Botón de logout */
+.app-sidebar-logout-button {
+    background-color: #6200ea;
+    color: white;
+    border-radius: 12px;
+    padding: 8px 0;
+    text-transform: none;
+    box-shadow: 0 4px 12px rgba(98, 0, 234, 0.2);
+    transition: all 0.3s ease;
+}
+
+.app-sidebar-logout-button.collapsed {
+    min-width: 48px;
+    justify-content: center;
+}
+
+.app-sidebar-logout-button.expanded {
+    justify-content: flex-start;
+}
+
+.app-sidebar-logout-button:hover {
+    background-color: #5000d3;
+    box-shadow: 0 6px 16px rgba(98, 0, 234, 0.3);
+}
+
+/* Eliminar todos los estilos del botón flotante ya que ahora usamos estilos inline */
+
+/* Modal de perfil */
+.app-sidebar-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+
+.app-sidebar-modal-card {
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.app-sidebar-modal-header {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.app-sidebar-modal-title {
+    font-weight: 600;
+    color: #6200ea;
+}
+
+.app-sidebar-modal-content {
+    padding: 24px;
+}
+
+.app-sidebar-modal-field {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background-color: #f9f5ff;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.app-sidebar-modal-field-label {
+    margin-bottom: 4px;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.875rem;
+}
+
+.app-sidebar-modal-field-value {
+    font-weight: 500;
+}
+
+.app-sidebar-modal-chip {
+    align-self: flex-start;
+    background-color: #6200ea;
+    font-weight: 500;
+}
+
+.app-sidebar-modal-error {
+    text-align: center;
+    padding: 24px;
+    background-color: #ffebee;
+    border-radius: 12px;
+}
+
+.app-sidebar-modal-footer {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.app-sidebar-modal-close-button {
+    background-color: #6200ea;
+    color: white;
+    border-radius: 12px;
+    padding: 8px 32px;
+    text-transform: none;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(98, 0, 234, 0.2);
+}
+
+.app-sidebar-modal-close-button:hover {
+    background-color: #5000d3;
+    box-shadow: 0 6px 16px rgba(98, 0, 234, 0.3);
+}
+
+/* Asegurar que no haya interferencia con el drawer */
+.app-sidebar-drawer {
+    width: 280px;
+    box-sizing: border-box;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    z-index: 1200;
+}
+
+.app-sidebar-drawer-backdrop {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Flexbox utilities */
+.app-sidebar-flex-grow {
+    flex-grow: 1;
+}
+
+/* Divider */
+.app-sidebar-divider {
+    margin: 8px 16px;
+    opacity: 0.6;
+}
+
+/* Skeleton loading */
+.app-sidebar-skeleton-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Avatar */
+.app-sidebar-avatar {
+    background-color: #6200ea;
+    width: 60px;
+    height: 60px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .app-sidebar-section-title {
+        font-size: 0.7rem;
+    }
+
+    .app-sidebar-modal-card {
+        width: 95%;
+        margin: 16px;
+    }
+
+    .app-sidebar-modal-content {
+        padding: 16px;
+    }
+
+    .app-sidebar-modal-field {
+        margin-bottom: 16px;
+        padding: 12px;
+    }
+
+    /* Ajustar posición del botón flotante en móvil */
+    .app-sidebar-mobile-toggle {
+        width: 48px;
+        height: 48px;
+        top: 12px;
+        left: 12px;
+    }
+}

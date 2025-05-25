@@ -1,3 +1,5 @@
+"use client"
+
 import {
     Dashboard as DashboardIcon,
     Logout as LogOutIcon,
@@ -5,7 +7,6 @@ import {
     Person as ProfileIcon,
     School as SchoolIcon,
 } from "@mui/icons-material"
-import MenuIcon from "@mui/icons-material/Menu"
 import {
     Avatar,
     Badge,
@@ -17,13 +18,14 @@ import {
     Chip,
     Divider,
     Drawer,
-    IconButton,
+    Fab,
     ListItemButton,
     ListItemIcon,
     ListItemText,
     Modal,
     Paper,
     Skeleton,
+    Tooltip,
     Typography,
     useMediaQuery,
     useTheme,
@@ -33,14 +35,15 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
+import "./AppSidebar.css"
 
 const campusUniversitarios = [
-    { id: 1, nombre: "Talca" },
-    { id: 2, nombre: "Curico" },
-    { id: 3, nombre: "Linares" },
-    { id: 4, nombre: "Santiago" },
-    { id: 5, nombre: "Pehuenche" },
-    { id: 6, nombre: "Colchagua" },
+    { id: 1, nombre: "Talca", denuncias: 24 },
+    { id: 2, nombre: "Curico", denuncias: 24 },
+    { id: 3, nombre: "Linares", denuncias: 12 },
+    { id: 4, nombre: "Santiago", denuncias: 8 },
+    { id: 5, nombre: "Pehuenche", denuncias: 15 },
+    { id: 6, nombre: "Colchagua", denuncias: 6 },
 ]
 
 interface AppSidebarProps {
@@ -62,8 +65,9 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
     const navigate = useNavigate()
     const location = useLocation()
     const theme = useTheme()
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"))
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"))
     const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [usuario, setUsuario] = useState<Usuario | null>(null)
     const [loading, setLoading] = useState(false)
@@ -126,6 +130,14 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
         if (isSmallScreen) setIsDrawerOpen(false)
     }
 
+    const toggleCollapse = () => {
+        if (isSmallScreen) {
+            setIsDrawerOpen(!isDrawerOpen)
+        } else {
+            setIsCollapsed(!isCollapsed)
+        }
+    }
+
     // Función para obtener las iniciales del nombre
     const getInitials = (name: string) => {
         return name
@@ -135,285 +147,198 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
             .toUpperCase()
     }
 
+    const sidebarWidth = isCollapsed ? 80 : 280
+
     const drawerContent = (
-        <Box
-            sx={{
-                width: 280,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                backgroundColor: "#f9f5ff",
-            }}
-        >
-            <Box
-                sx={{
-                    p: 3,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    backgroundColor: "#6200ea",
-                    color: "white",
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 60,
-                        height: 60,
-                        bgcolor: "white",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                        mb: 2,
-                    }}
-                >
-                    <SchoolIcon sx={{ color: "#6200ea", fontSize: 32 }} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, textAlign: "center" }}>
-                    Universidad de Talca
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8, textAlign: "center" }}>
-                    Sistema de Mapas y Seguridad
-                </Typography>
+        <Box className="app-sidebar-container" sx={{ width: sidebarWidth }}>
+            <Box className={`app-sidebar-header ${isCollapsed ? "collapsed" : "expanded"}`}>
+                <Tooltip title={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"} placement="right">
+                    <Box onClick={toggleCollapse} className={`app-sidebar-logo ${isCollapsed ? "collapsed" : "expanded"}`}>
+                        <SchoolIcon className={`app-sidebar-logo-icon ${isCollapsed ? "collapsed" : "expanded"}`} />
+                    </Box>
+                </Tooltip>
+                {!isCollapsed && (
+                    <Box className="app-sidebar-header-text">
+                        <Typography className="app-sidebar-title">Universidad de Talca</Typography>
+                        <Typography className="app-sidebar-subtitle">Sistema de Mapas y Seguridad</Typography>
+                    </Box>
+                )}
             </Box>
 
-            <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle2" sx={{ pl: 2, mb: 1, color: "#6200ea", fontWeight: 600 }}>
-                    DASHBOARD
-                </Typography>
-                <Paper
-                    elevation={0}
-                    sx={{
-                        borderRadius: "12px",
-                        overflow: "hidden",
-                        mb: 2,
-                        backgroundColor: "white",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                    }}
-                >
-                    <ListItemButton
-                        onClick={handleNavigateToDashboard}
-                        selected={activeItem === "dashboard"}
-                        sx={{
-                            borderRadius: "12px",
-                            mb: 0.5,
-                            "&.Mui-selected": {
-                                backgroundColor: "rgba(98, 0, 234, 0.08)",
-                                "&:hover": {
-                                    backgroundColor: "rgba(98, 0, 234, 0.12)",
-                                },
-                            },
-                            "&:hover": {
-                                backgroundColor: "rgba(98, 0, 234, 0.04)",
-                            },
-                        }}
-                    >
-                        <ListItemIcon>
-                            <DashboardIcon sx={{ color: "#6200ea" }} />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary="Panel Principal"
-                            primaryTypographyProps={{ fontWeight: activeItem === "dashboard" ? 600 : 400 }}
-                        />
-                    </ListItemButton>
+            <Box className={`app-sidebar-section ${isCollapsed ? "collapsed" : "expanded"}`}>
+                {!isCollapsed && <Typography className="app-sidebar-section-title">DASHBOARD</Typography>}
+                <Paper elevation={0} className="app-sidebar-card">
+                    <Tooltip title={isCollapsed ? "Panel Principal" : ""} placement="right">
+                        <ListItemButton
+                            onClick={handleNavigateToDashboard}
+                            selected={activeItem === "dashboard"}
+                            className={`app-sidebar-list-button ${isCollapsed ? "collapsed" : "expanded"} ${activeItem === "dashboard" ? "selected" : ""
+                                }`}
+                        >
+                            <ListItemIcon className={`app-sidebar-list-icon ${isCollapsed ? "collapsed" : "expanded"}`}>
+                                <DashboardIcon />
+                            </ListItemIcon>
+                            {!isCollapsed && (
+                                <ListItemText
+                                    primary="Panel Principal"
+                                    primaryTypographyProps={{ fontWeight: activeItem === "dashboard" ? 600 : 400 }}
+                                />
+                            )}
+                        </ListItemButton>
+                    </Tooltip>
                 </Paper>
             </Box>
 
-            <Box sx={{ px: 2, pb: 2 }}>
-                <Typography variant="subtitle2" sx={{ pl: 2, mb: 1, color: "#6200ea", fontWeight: 600 }}>
-                    CAMPUS
-                </Typography>
-                <Paper
-                    elevation={0}
-                    sx={{
-                        borderRadius: "12px",
-                        overflow: "hidden",
-                        backgroundColor: "white",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                    }}
-                >
+            <Box className={`app-sidebar-section ${isCollapsed ? "collapsed" : "expanded"}`}>
+                {!isCollapsed && <Typography className="app-sidebar-section-title">CAMPUS</Typography>}
+                <Paper elevation={0} className="app-sidebar-card">
                     {campusUniversitarios.map((campus) => (
-                        <ListItemButton
-                            key={campus.id}
-                            onClick={() => handleSelectCampus(campus.nombre)}
-                            selected={activeItem === campus.nombre}
-                            sx={{
-                                borderRadius: "12px",
-                                mb: 0.5,
-                                "&.Mui-selected": {
-                                    backgroundColor: "rgba(98, 0, 234, 0.08)",
-                                    "&:hover": {
-                                        backgroundColor: "rgba(98, 0, 234, 0.12)",
-                                    },
-                                },
-                                "&:hover": {
-                                    backgroundColor: "rgba(98, 0, 234, 0.04)",
-                                },
-                            }}
-                        >
-                            <ListItemIcon>
-                                <MapIcon sx={{ color: "#6200ea" }} />
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={campus.nombre}
-                                primaryTypographyProps={{ fontWeight: activeItem === campus.nombre ? 600 : 400 }}
-                            />
-                            <Badge
-                                badgeContent={campus.denuncias}
-                                color="error"
-                                sx={{
-                                    "& .MuiBadge-badge": {
-                                        fontSize: "0.7rem",
-                                        height: 18,
-                                        minWidth: 18,
-                                    },
-                                }}
-                            />
-                        </ListItemButton>
+                        <Tooltip key={campus.id} title={isCollapsed ? campus.nombre : ""} placement="right">
+                            <ListItemButton
+                                onClick={() => handleSelectCampus(campus.nombre)}
+                                selected={activeItem === campus.nombre}
+                                className={`app-sidebar-list-button ${isCollapsed ? "collapsed" : "expanded"} ${activeItem === campus.nombre ? "selected" : ""
+                                    }`}
+                            >
+                                <ListItemIcon className={`app-sidebar-list-icon ${isCollapsed ? "collapsed" : "expanded"}`}>
+                                    <Badge
+                                        badgeContent={isCollapsed ? campus.denuncias : undefined}
+                                        color="error"
+                                        classes={{ badge: "app-sidebar-badge" }}
+                                    >
+                                        <MapIcon />
+                                    </Badge>
+                                </ListItemIcon>
+                                {!isCollapsed && (
+                                    <>
+                                        <ListItemText
+                                            primary={campus.nombre}
+                                            primaryTypographyProps={{ fontWeight: activeItem === campus.nombre ? 600 : 400 }}
+                                        />
+                                        <Badge
+                                            badgeContent={campus.denuncias}
+                                            color="error"
+                                            classes={{ badge: "app-sidebar-badge expanded" }}
+                                        />
+                                    </>
+                                )}
+                            </ListItemButton>
+                        </Tooltip>
                     ))}
                 </Paper>
             </Box>
 
-            <Box sx={{ flexGrow: 1 }} />
+            <Box className="app-sidebar-flex-grow" />
 
-            <Divider sx={{ mx: 2, my: 1, opacity: 0.6 }} />
+            <Divider className="app-sidebar-divider" />
 
-            <Box sx={{ p: 2 }}>
-                <Paper
-                    elevation={0}
-                    sx={{
-                        borderRadius: "12px",
-                        overflow: "hidden",
-                        backgroundColor: "white",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                        mb: 2,
-                    }}
-                >
-                    <ListItemButton
-                        onClick={handleProfile}
-                        sx={{
-                            borderRadius: "12px",
-                            "&:hover": {
-                                backgroundColor: "rgba(98, 0, 234, 0.04)",
-                            },
-                        }}
-                    >
-                        <ListItemIcon>
-                            <ProfileIcon sx={{ color: "#6200ea" }} />
-                        </ListItemIcon>
-                        <ListItemText primary="Mi Perfil" />
-                    </ListItemButton>
+            <Box className={`app-sidebar-section ${isCollapsed ? "collapsed" : "expanded"}`}>
+                <Paper elevation={0} className="app-sidebar-card">
+                    <Tooltip title={isCollapsed ? "Mi Perfil" : ""} placement="right">
+                        <ListItemButton
+                            onClick={handleProfile}
+                            className={`app-sidebar-list-button ${isCollapsed ? "collapsed" : "expanded"}`}
+                        >
+                            <ListItemIcon className={`app-sidebar-list-icon ${isCollapsed ? "collapsed" : "expanded"}`}>
+                                <ProfileIcon />
+                            </ListItemIcon>
+                            {!isCollapsed && <ListItemText primary="Mi Perfil" />}
+                        </ListItemButton>
+                    </Tooltip>
                 </Paper>
 
-                <Button
-                    variant="contained"
-                    fullWidth
-                    startIcon={<LogOutIcon />}
-                    onClick={handleLogout}
-                    sx={{
-                        backgroundColor: "#6200ea",
-                        color: "white",
-                        borderRadius: "12px",
-                        py: 1,
-                        textTransform: "none",
-                        boxShadow: "0 4px 12px rgba(98, 0, 234, 0.2)",
-                        "&:hover": {
-                            backgroundColor: "#5000d3",
-                            boxShadow: "0 6px 16px rgba(98, 0, 234, 0.3)",
-                        },
-                    }}
-                >
-                    Cerrar Sesión
-                </Button>
+                <Tooltip title={isCollapsed ? "Cerrar Sesión" : ""} placement="right">
+                    <Button
+                        variant="contained"
+                        fullWidth
+                        startIcon={!isCollapsed ? <LogOutIcon /> : undefined}
+                        onClick={handleLogout}
+                        className={`app-sidebar-logout-button ${isCollapsed ? "collapsed" : "expanded"}`}
+                    >
+                        {isCollapsed ? <LogOutIcon /> : "Cerrar Sesión"}
+                    </Button>
+                </Tooltip>
             </Box>
         </Box>
     )
 
     return (
         <>
-            {isSmallScreen ? (
-                <>
-                    <IconButton
-                        onClick={() => setIsDrawerOpen(true)}
-                        sx={{
-                            position: "fixed",
-                            top: 16,
-                            left: 16,
-                            zIndex: 1300,
-                            bgcolor: "#6200ea",
-                            color: "white",
-                            boxShadow: "0 4px 12px rgba(98, 0, 234, 0.2)",
-                            "&:hover": { bgcolor: "#5000d3", boxShadow: "0 6px 16px rgba(98, 0, 234, 0.3)" },
-                        }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Drawer
-                        anchor="left"
-                        open={isDrawerOpen}
-                        onClose={() => setIsDrawerOpen(false)}
-                        ModalProps={{
-                            keepMounted: true,
-                        }}
-                        sx={{
-                            "& .MuiDrawer-paper": {
-                                width: 280,
-                                boxSizing: "border-box",
-                                boxShadow: "0 0 20px rgba(0, 0, 0, 0.1)",
-                            },
-                            "& .MuiBackdrop-root": {
-                                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                            },
-                        }}
-                    >
-                        {drawerContent}
-                    </Drawer>
-                </>
-            ) : (
-                <Drawer
-                    anchor="left"
-                    variant="permanent"
-                    sx={{
-                        width: 280,
-                        flexShrink: 0,
-                        "& .MuiDrawer-paper": {
-                            width: 280,
-                            boxSizing: "border-box",
-                            boxShadow: "4px 0 10px rgba(0, 0, 0, 0.05)",
-                            border: "none",
-                        },
-                    }}
-                >
-                    {drawerContent}
-                </Drawer>
-            )}
-
-            <Modal
-                open={isModalOpen}
-                onClose={handleCloseModal}
-                aria-labelledby="modal-perfil-usuario"
+            <Drawer
+                anchor="left"
+                open={isSmallScreen ? isDrawerOpen : true}
+                onClose={() => isSmallScreen && setIsDrawerOpen(false)}
+                variant={isSmallScreen ? "temporary" : "permanent"}
+                ModalProps={isSmallScreen ? { keepMounted: true } : undefined}
+                classes={{
+                    paper: "app-sidebar-drawer",
+                }}
+                BackdropProps={
+                    isSmallScreen
+                        ? {
+                            className: "app-sidebar-drawer-backdrop",
+                        }
+                        : undefined
+                }
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backdropFilter: "blur(3px)",
+                    width: sidebarWidth,
+                    flexShrink: 0,
+                    transition: "width 0.3s ease",
+                    "& .MuiDrawer-paper": {
+                        width: sidebarWidth,
+                        boxSizing: "border-box",
+                        boxShadow: "4px 0 10px rgba(0, 0, 0, 0.05)",
+                        border: "none",
+                        transition: "width 0.3s ease",
+                    },
                 }}
             >
-                <Card
+                {drawerContent}
+            </Drawer>
+
+            {/* Botón flotante para móvil - Renderizado en el body usando portal */}
+            {isSmallScreen && !isDrawerOpen && (
+                <Box
                     sx={{
-                        width: "90%",
-                        maxWidth: 500,
-                        maxHeight: "80vh",
-                        overflowY: "auto",
-                        borderRadius: "16px",
-                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                        position: "fixed",
+                        top: 20,
+                        left: 20,
+                        zIndex: 9999,
+                        pointerEvents: "auto",
                     }}
                 >
+                    <Tooltip title="Abrir menú" placement="bottom">
+                        <Fab
+                            onClick={() => setIsDrawerOpen(true)}
+                            sx={{
+                                backgroundColor: "#6200ea",
+                                color: "white",
+                                boxShadow: "0 6px 20px rgba(98, 0, 234, 0.3)",
+                                "&:hover": {
+                                    backgroundColor: "#5000d3",
+                                    boxShadow: "0 8px 25px rgba(98, 0, 234, 0.4)",
+                                    transform: "scale(1.1)",
+                                },
+                                "&:active": {
+                                    transform: "scale(0.95)",
+                                },
+                                transition: "all 0.3s ease",
+                            }}
+                            size="medium"
+                            aria-label="Abrir menú de navegación"
+                        >
+                            <SchoolIcon sx={{ fontSize: 28 }} />
+                        </Fab>
+                    </Tooltip>
+                </Box>
+            )}
+
+            <Modal open={isModalOpen} onClose={handleCloseModal} className="app-sidebar-modal">
+                <Card className="app-sidebar-modal-card">
                     <CardHeader
                         avatar={
                             usuario ? (
-                                <Avatar sx={{ bgcolor: "#6200ea", width: 60, height: 60 }}>
+                                <Avatar className="app-sidebar-avatar">
                                     {getInitials(`${usuario.first_name} ${usuario.last_name}`)}
                                 </Avatar>
                             ) : (
@@ -422,27 +347,19 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                         }
                         title={usuario ? `${usuario.first_name} ${usuario.last_name}` : "Perfil de Usuario"}
                         subheader={usuario ? usuario.role : "Información del usuario"}
-                        titleTypographyProps={{ variant: "h5", fontWeight: 600, color: "#6200ea" }}
-                        subheaderTypographyProps={{ variant: "subtitle1" }}
-                        sx={{ pb: 1, borderBottom: "1px solid #f0f0f0" }}
+                        titleTypographyProps={{ className: "app-sidebar-modal-title" }}
+                        className="app-sidebar-modal-header"
                     />
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent className="app-sidebar-modal-content">
                         {loading ? (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <Box className="app-sidebar-skeleton-container">
                                 <Skeleton variant="rectangular" height={40} />
                                 <Skeleton variant="rectangular" height={40} />
                                 <Skeleton variant="rectangular" height={40} />
                                 <Skeleton variant="rectangular" height={40} />
                             </Box>
                         ) : error || !usuario ? (
-                            <Box
-                                sx={{
-                                    textAlign: "center",
-                                    p: 3,
-                                    backgroundColor: "#ffebee",
-                                    borderRadius: "12px",
-                                }}
-                            >
+                            <Box className="app-sidebar-modal-error">
                                 <Typography color="error" variant="h6" sx={{ mb: 1 }}>
                                     Error al cargar datos
                                 </Typography>
@@ -452,120 +369,41 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                             </Box>
                         ) : (
                             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        p: 2,
-                                        backgroundColor: "#f9f5ff",
-                                        borderRadius: "12px",
-                                    }}
-                                >
-                                    <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                                        Correo Electrónico
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {usuario.email}
-                                    </Typography>
+                                <Box className="app-sidebar-modal-field">
+                                    <Typography className="app-sidebar-modal-field-label">Correo Electrónico</Typography>
+                                    <Typography className="app-sidebar-modal-field-value">{usuario.email}</Typography>
                                 </Box>
 
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        p: 2,
-                                        backgroundColor: "#f9f5ff",
-                                        borderRadius: "12px",
-                                    }}
-                                >
-                                    <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                                        Teléfono
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                <Box className="app-sidebar-modal-field">
+                                    <Typography className="app-sidebar-modal-field-label">Teléfono</Typography>
+                                    <Typography className="app-sidebar-modal-field-value">
                                         {usuario.telefono || "No especificado"}
                                     </Typography>
                                 </Box>
 
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        p: 2,
-                                        backgroundColor: "#f9f5ff",
-                                        borderRadius: "12px",
-                                    }}
-                                >
-                                    <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                                        Rol
-                                    </Typography>
-                                    <Chip
-                                        label={usuario.role}
-                                        color="primary"
-                                        sx={{
-                                            alignSelf: "flex-start",
-                                            backgroundColor: "#6200ea",
-                                            fontWeight: 500,
-                                        }}
-                                    />
+                                <Box className="app-sidebar-modal-field">
+                                    <Typography className="app-sidebar-modal-field-label">Rol</Typography>
+                                    <Chip label={usuario.role} color="primary" className="app-sidebar-modal-chip" />
                                 </Box>
 
                                 {usuario.campus && (
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            p: 2,
-                                            backgroundColor: "#f9f5ff",
-                                            borderRadius: "12px",
-                                        }}
-                                    >
-                                        <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                                            Campus
-                                        </Typography>
-                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                            {usuario.campus}
-                                        </Typography>
+                                    <Box className="app-sidebar-modal-field">
+                                        <Typography className="app-sidebar-modal-field-label">Campus</Typography>
+                                        <Typography className="app-sidebar-modal-field-value">{usuario.campus}</Typography>
                                     </Box>
                                 )}
 
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        p: 2,
-                                        backgroundColor: "#f9f5ff",
-                                        borderRadius: "12px",
-                                    }}
-                                >
-                                    <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                                        Fecha de Registro
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                <Box className="app-sidebar-modal-field">
+                                    <Typography className="app-sidebar-modal-field-label">Fecha de Registro</Typography>
+                                    <Typography className="app-sidebar-modal-field-value">
                                         {format(new Date(usuario.date_joined), "dd/MM/yyyy", { locale: es })}
                                     </Typography>
                                 </Box>
                             </Box>
                         )}
                     </CardContent>
-                    <Box sx={{ display: "flex", justifyContent: "center", p: 3, borderTop: "1px solid #f0f0f0" }}>
-                        <Button
-                            variant="contained"
-                            onClick={handleCloseModal}
-                            sx={{
-                                backgroundColor: "#6200ea",
-                                color: "white",
-                                borderRadius: "12px",
-                                px: 4,
-                                py: 1,
-                                textTransform: "none",
-                                fontWeight: 500,
-                                boxShadow: "0 4px 12px rgba(98, 0, 234, 0.2)",
-                                "&:hover": {
-                                    backgroundColor: "#5000d3",
-                                    boxShadow: "0 6px 16px rgba(98, 0, 234, 0.3)",
-                                },
-                            }}
-                        >
+                    <Box className="app-sidebar-modal-footer">
+                        <Button variant="contained" onClick={handleCloseModal} className="app-sidebar-modal-close-button">
                             Cerrar
                         </Button>
                     </Box>

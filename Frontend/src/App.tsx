@@ -3,7 +3,6 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Home from './components/dashboard/Home';
-import PerfilUsuario from './components/dashboard/PerfilUsuario';
 import Login from './components/login/Login';
 import MapComponent from './components/open_map/Mapa/map_components/OpenMap';
 
@@ -111,7 +110,6 @@ const App: React.FC = () => {
           <Route element={<PrivateRoute role={role} />} >
             <Route path="/home" element={<Home onLogout={handleLogout} />} />
             <Route path="/mapa2/:campus" element={<MapComponent />} />
-            <Route path="/perfil" element={<PerfilUsuario />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,72 +1,128 @@
-import { Box, Button, TextField, Typography } from '@mui/material';
-import axios from 'axios';
-import React, { useState } from 'react';
+"use client"
+
+import { Lock as LockIcon, Person as PersonIcon, School as SchoolIcon } from "@mui/icons-material"
+import { Box, Button, InputAdornment, TextField, Typography } from "@mui/material"
+import axios from "axios"
+import type React from "react"
+import { useState } from "react"
+import "./Login.css"
 
 interface LoginProps {
-    onLogin: () => void;
+    onLogin: () => void
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
+    const [error, setError] = useState("")
+    const [loading, setLoading] = useState(false)
+    const [focusedField, setFocusedField] = useState<string | null>(null)
 
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
+        e.preventDefault()
+        setLoading(true)
+        setError("")
+
         try {
-            const response = await axios.post('http://localhost:8000/api/token/', {
+            const response = await axios.post("http://localhost:8000/api/token/", {
                 username,
                 password,
-            });
-            localStorage.setItem('access_token', response.data.access);
-            localStorage.setItem('refresh_token', response.data.refresh);
-            setError('');
-            onLogin();
+            })
+            localStorage.setItem("access_token", response.data.access)
+            localStorage.setItem("refresh_token", response.data.refresh)
+            setError("")
+            onLogin()
         } catch (err) {
-            setError('Usuario o contraseña incorrectos');
+            setError("Usuario o contraseña incorrectos")
+        } finally {
+            setLoading(false)
         }
-    };
+    }
 
     return (
-        <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8, p: 2 }}>
-            <Typography variant="h5" gutterBottom>
-                Iniciar Sesión
-            </Typography>
-            <form onSubmit={handleLogin}>
-                <TextField
-                    label="Usuario"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    fullWidth
-                    margin="normal"
-                    variant="outlined"
-                />
-                <TextField
-                    label="Contraseña"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    fullWidth
-                    margin="normal"
-                    variant="outlined"
-                />
-                <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                >
-                    Iniciar Sesión
-                </Button>
-            </form>
-            {error && (
-                <Typography color="error" sx={{ mt: 2 }}>
-                    {error}
-                </Typography>
-            )}
-        </Box>
-    );
-};
+        <Box className="login-container">
+            <Box className="login-card">
+                <Box className="login-header">
+                    <Box className="login-logo">
+                        <SchoolIcon className="login-logo-icon" />
+                    </Box>
+                    <Typography className="login-title">Bienvenido</Typography>
+                    <Typography className="login-subtitle">Sistema de Mapas y Seguridad - Universidad de Talca</Typography>
+                </Box>
 
-export default Login;
+                <form onSubmit={handleLogin} className="login-form">
+                    <Box className={`login-field ${focusedField === "username" ? "focused" : ""}`}>
+                        <TextField
+                            label="Usuario"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            onFocus={() => setFocusedField("username")}
+                            onBlur={() => setFocusedField(null)}
+                            fullWidth
+                            variant="outlined"
+                            required
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <PersonIcon className="login-field-icon" />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Box>
+
+                    <Box className={`login-field ${focusedField === "password" ? "focused" : ""}`}>
+                        <TextField
+                            label="Contraseña"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onFocus={() => setFocusedField("password")}
+                            onBlur={() => setFocusedField(null)}
+                            fullWidth
+                            variant="outlined"
+                            required
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LockIcon className="login-field-icon" />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Box>
+
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        fullWidth
+                        disabled={loading || !username || !password}
+                        className="login-button"
+                    >
+                        {loading ? (
+                            <Box className="login-loading">
+                                <Box className="login-loading-spinner" />
+                                Iniciando sesión...
+                            </Box>
+                        ) : (
+                            "Iniciar Sesión"
+                        )}
+                    </Button>
+                </form>
+
+                {error && <Box className="login-error">{error}</Box>}
+
+                <Box className="login-footer">
+                    <Typography className="login-footer-text">
+                        ¿Problemas para acceder?{" "}
+                        <a href="#" className="login-footer-link">
+                            Contacta al administrador
+                        </a>
+                    </Typography>
+                </Box>
+            </Box>
+        </Box>
+    )
+}
+
+export default Login

@@ -230,7 +230,9 @@ class DenunciaViewSet(viewsets.ModelViewSet):
             print(f"No se pudo crear el issue en Jira: {e}")
             # Opcional: decidir si fallar la creación de la denuncia si Jira falla
             # raise e
-
+    def partial_update(self, request, *args, **kwargs):
+            return super().partial_update(request, *args, **kwargs)
+            
     def create_jira_issue(self, denuncia_data):
         url = f"{settings.JIRA_API_URL}/rest/api/3/issue"
         auth = (settings.JIRA_EMAIL, settings.JIRA_API_TOKEN)

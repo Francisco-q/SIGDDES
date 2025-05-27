@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Home from './components/dashboard/Home';
 import Login from './components/login/Login';
-import MapComponent from './components/open_map/Mapa/map_components/OpenMap';
+import MapComponent from './components/open_map/map_components/OpenMap';
 
 const PrivateRoute: React.FC<{ role: string | null }> = ({ role }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

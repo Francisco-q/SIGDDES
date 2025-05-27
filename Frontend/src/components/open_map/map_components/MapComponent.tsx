@@ -2,8 +2,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect } from 'react';
 import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
-import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
-import SetView from '../../SetView';
+import { Path, ReceptionQR, TotemQR } from '../../../types/types';
+import SetView from '../MapaUtils/SetView';
 
 const totemIcon = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',

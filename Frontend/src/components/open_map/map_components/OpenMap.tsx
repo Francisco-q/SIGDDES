@@ -24,12 +24,12 @@ import {
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { deletePath, fetchPaths, fetchReceptions, fetchTotems, uploadImages } from '../../../../services/apiService';
-import axiosInstance from '../../../../services/axiosInstance';
-import { Path, ReceptionQR, TotemQR } from '../../../../types/types';
+import { deletePath, fetchPaths, fetchReceptions, fetchTotems, uploadImages } from '../../../services/apiService';
+import axiosInstance from '../../../services/axiosInstance';
+import { Path, ReceptionQR, TotemQR } from '../../../types/types';
 import FormComponent from '../FormAcogida/FormComponent';
 import InfoPunto from '../info_punto/InfoPunto';
-import MapComponent from '../map_components/MapComponent';
+import MapComponent from './MapComponent';
 import './OpenMap.css';
 
 const OpenMap: React.FC = () => {

@@ -346,7 +346,7 @@ export default function DashboardDenuncias() {
                             <Box className={`dashboard-right-column ${responsiveClass}`}>
                                 <Card className="dashboard-stats-card">
                                     <CardHeader
-                                        title="Total Denuncias"
+                                        title="Total Casos"
                                         action={
                                             <Box className={`dashboard-stats-icon-container ${responsiveClass}`}>
                                                 <FileTextIcon className={`dashboard-stats-icon ${responsiveClass}`} />
@@ -367,7 +367,7 @@ export default function DashboardDenuncias() {
                                 <Card className="dashboard-stats-card">
                                     <CardHeader
                                         title="Estadísticas por Tipo"
-                                        subheader="Distribución de denuncias según su categoría"
+                                        subheader="Distribución de casos según su categoría"
                                         titleTypographyProps={{ className: `dashboard-stats-title ${responsiveClass}` }}
                                         subheaderTypographyProps={{ variant: "caption", fontSize: { xs: "0.7rem", md: "0.75rem" } }}
                                         className="dashboard-stats-header"
@@ -435,7 +435,7 @@ export default function DashboardDenuncias() {
                                 size="medium"
                                 className={`dashboard-button dashboard-button-contained ${responsiveClass}`}
                             >
-                                Ver todas las denuncias
+                                Ver todas los casos
                             </MuiButton>
                         </CardActions>
                     </Card>

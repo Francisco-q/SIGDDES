@@ -1,0 +1,559 @@
+/* Contenedor principal del formulario */
+.form-component-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px;
+    background: linear-gradient(135deg, #f9f5ff 0%, #ffffff 100%);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(98, 0, 234, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.form-component-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6200ea, #9c27b0, #6200ea);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+
+    0%,
+    100% {
+        background-position: 200% 0;
+    }
+
+    50% {
+        background-position: -200% 0;
+    }
+}
+
+/* Header del formulario */
+.form-component-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #f0e6ff;
+    position: relative;
+}
+
+.form-component-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6200ea, #9c27b0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    animation: fadeInDown 0.6s ease-out;
+}
+
+.form-component-subtitle {
+    color: #64748b;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto;
+    animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+/* Secciones del formulario */
+.form-component-section {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(98, 0, 234, 0.08);
+    border: 1px solid #f0e6ff;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease-out both;
+}
+
+.form-component-section:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.form-component-section:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.form-component-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(98, 0, 234, 0.12);
+}
+
+.form-component-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #6200ea;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-component-section-title::before {
+    content: "";
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(135deg, #6200ea, #9c27b0);
+    border-radius: 2px;
+}
+
+/* Campos del formulario */
+.form-component-field {
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.form-component-field .MuiTextField-root {
+    width: 100%;
+}
+
+.form-component-field .MuiOutlinedInput-root {
+    border-radius: 12px;
+    background-color: #fafafa;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.form-component-field .MuiOutlinedInput-root:hover {
+    background-color: #f5f5f5;
+}
+
+.form-component-field .MuiOutlinedInput-root.Mui-focused {
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.1);
+}
+
+.form-component-field .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+    border-color: #e2e8f0;
+    border-width: 2px;
+    transition: all 0.3s ease;
+}
+
+.form-component-field .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    border-color: #cbd5e0;
+}
+
+.form-component-field .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: #6200ea;
+    border-width: 2px;
+}
+
+.form-component-field .MuiInputLabel-root {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.form-component-field .MuiInputLabel-root.Mui-focused {
+    color: #6200ea;
+}
+
+.form-component-field .MuiOutlinedInput-input {
+    padding: 16px 14px;
+}
+
+/* DatePicker específico */
+.form-component-field .MuiDatePicker-root {
+    width: 100%;
+}
+
+.form-component-field .MuiPickersToolbar-root {
+    background: linear-gradient(135deg, #6200ea, #9c27b0);
+}
+
+.form-component-field .MuiPickersDay-root {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.form-component-field .MuiPickersDay-root:hover {
+    background-color: rgba(98, 0, 234, 0.08);
+}
+
+.form-component-field .MuiPickersDay-root.Mui-selected {
+    background: linear-gradient(135deg, #6200ea, #9c27b0);
+    color: white;
+    font-weight: 600;
+}
+
+.form-component-field .MuiPickersDay-root.Mui-selected:hover {
+    background: linear-gradient(135deg, #5000d3, #8e24aa);
+}
+
+.form-component-field .MuiPickersCalendarHeader-root {
+    padding: 16px;
+    background-color: #f9f5ff;
+}
+
+.form-component-field .MuiPickersCalendarHeader-label {
+    color: #6200ea;
+    font-weight: 600;
+}
+
+.form-component-field .MuiPickersArrowSwitcher-button {
+    color: #6200ea;
+}
+
+.form-component-field .MuiPickersArrowSwitcher-button:hover {
+    background-color: rgba(98, 0, 234, 0.08);
+}
+
+/* Modal del DatePicker */
+.form-component-field .MuiPickersPopper-root {
+    z-index: 1300;
+}
+
+.form-component-field .MuiPaper-root.MuiPickersPopper-paper {
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(98, 0, 234, 0.15);
+    border: 1px solid #f0e6ff;
+    overflow: hidden;
+}
+
+/* Responsive para DatePicker */
+@media (max-width: 768px) {
+    .form-component-field .MuiPickersPopper-paper {
+        margin: 8px;
+        width: calc(100vw - 32px);
+        max-width: none;
+    }
+
+    .form-component-field .MuiPickersLayout-root {
+        padding: 16px;
+    }
+
+    .form-component-field .MuiPickersCalendarHeader-root {
+        padding: 12px;
+    }
+
+    .form-component-field .MuiPickersDay-root {
+        width: 36px;
+        height: 36px;
+        font-size: 0.875rem;
+    }
+}
+
+/* Mejoras para el input del DatePicker */
+.form-component-field .MuiInputBase-root.MuiOutlinedInput-root {
+    cursor: pointer;
+}
+
+.form-component-field .MuiInputBase-input.MuiOutlinedInput-input {
+    cursor: pointer;
+}
+
+/* Icono del calendario */
+.form-component-field .MuiInputAdornment-root .MuiSvgIcon-root {
+    color: #6200ea;
+    transition: color 0.3s ease;
+}
+
+.form-component-field .MuiOutlinedInput-root.Mui-focused .MuiInputAdornment-root .MuiSvgIcon-root {
+    color: #6200ea;
+}
+
+/* Estados de error para DatePicker */
+.form-component-field .MuiOutlinedInput-root.Mui-error .MuiInputAdornment-root .MuiSvgIcon-root {
+    color: #dc2626;
+}
+
+/* Animación suave para el calendario */
+.form-component-field .MuiPickersSlideTransition-root {
+    min-height: 238px;
+}
+
+.form-component-field .MuiPickersSlideTransition-root .MuiPickersSlideTransition-slideEnter {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejoras para accesibilidad */
+.form-component-field .MuiPickersDay-root:focus {
+    outline: 2px solid #6200ea;
+    outline-offset: 2px;
+}
+
+.form-component-field .MuiPickersArrowSwitcher-button:focus {
+    outline: 2px solid #6200ea;
+    outline-offset: 2px;
+}
+
+/* Select específico */
+.form-component-select .MuiSelect-select {
+    padding: 16px 14px;
+}
+
+.form-component-select .MuiMenuItem-root {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 4px 8px;
+    transition: all 0.2s ease;
+}
+
+.form-component-select .MuiMenuItem-root:hover {
+    background-color: rgba(98, 0, 234, 0.08);
+}
+
+.form-component-select .MuiMenuItem-root.Mui-selected {
+    background-color: rgba(98, 0, 234, 0.12);
+    color: #6200ea;
+    font-weight: 600;
+}
+
+/* Textarea específico */
+.form-component-textarea .MuiOutlinedInput-root {
+    align-items: flex-start;
+}
+
+.form-component-textarea .MuiOutlinedInput-input {
+    min-height: 50px;
+    resize: vertical;
+}
+
+/* Botón de envío */
+.form-component-submit-button {
+    background: linear-gradient(135deg, #6200ea, #9c27b0);
+    color: white;
+    border-radius: 12px;
+    padding: 16px 48px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: none;
+    box-shadow: 0 8px 24px rgba(98, 0, 234, 0.3);
+    transition: all 0.3s ease;
+    margin-top: 32px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    min-width: 200px;
+    animation: fadeInUp 0.6s ease-out 0.4s both;
+}
+
+.form-component-submit-button:hover {
+    background: linear-gradient(135deg, #5000d3, #8e24aa);
+    box-shadow: 0 12px 32px rgba(98, 0, 234, 0.4);
+    transform: translateY(-3px);
+}
+
+.form-component-submit-button:active {
+    transform: translateY(-1px);
+}
+
+.form-component-submit-button:disabled {
+    background: #e2e8f0;
+    color: #a0aec0;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Modal de éxito */
+.form-component-success-modal .MuiDialog-paper {
+    border-radius: 20px;
+    padding: 8px;
+    background: linear-gradient(135deg, #f9f5ff 0%, #ffffff 100%);
+}
+
+.form-component-success-modal .MuiDialogTitle-root {
+    text-align: center;
+    color: #6200ea;
+    font-weight: 700;
+    font-size: 1.5rem;
+    padding-bottom: 8px;
+}
+
+.form-component-success-modal .MuiDialogContent-root {
+    text-align: center;
+    padding: 16px 24px;
+}
+
+.form-component-success-modal .MuiDialogContent-root .MuiTypography-root {
+    color: #64748b;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.form-component-success-modal .MuiDialogActions-root {
+    justify-content: center;
+    padding: 16px 24px 24px;
+}
+
+.form-component-success-modal .MuiButton-root {
+    background: linear-gradient(135deg, #6200ea, #9c27b0);
+    color: white;
+    border-radius: 12px;
+    padding: 12px 32px;
+    font-weight: 600;
+    text-transform: none;
+    box-shadow: 0 4px 16px rgba(98, 0, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.form-component-success-modal .MuiButton-root:hover {
+    background: linear-gradient(135deg, #5000d3, #8e24aa);
+    box-shadow: 0 6px 20px rgba(98, 0, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Mensajes de error */
+.form-component-field .MuiFormHelperText-root.Mui-error {
+    color: #dc2626;
+    font-weight: 500;
+    margin-top: 8px;
+    margin-left: 4px;
+}
+
+/* Grid responsive para campos */
+.form-component-grid {
+    display: grid;
+    gap: 24px;
+}
+
+.form-component-grid.two-columns {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* Animaciones */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estados de carga */
+.form-component-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.form-component-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-component-container {
+        padding: 24px 16px;
+        margin: 16px;
+        border-radius: 16px;
+    }
+
+    .form-component-title {
+        font-size: 1.75rem;
+    }
+
+    .form-component-subtitle {
+        font-size: 1rem;
+    }
+
+    .form-component-section {
+        padding: 24px 20px;
+        margin-bottom: 24px;
+    }
+
+    .form-component-section-title {
+        font-size: 1.25rem;
+    }
+
+    .form-component-grid.two-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .form-component-submit-button {
+        padding: 14px 32px;
+        font-size: 1rem;
+        min-width: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-component-container {
+        padding: 20px 12px;
+        margin: 12px;
+    }
+
+    .form-component-section {
+        padding: 20px 16px;
+    }
+
+    .form-component-field .MuiOutlinedInput-input {
+        padding: 14px 12px;
+    }
+}
+
+/* Indicadores de progreso */
+.form-component-progress {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+}
+
+.form-component-progress-step {
+    width: 40px;
+    height: 4px;
+    background-color: #e2e8f0;
+    margin: 0 4px;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.form-component-progress-step.active {
+    background: linear-gradient(90deg, #6200ea, #9c27b0);
+}
+
+.form-component-progress-step.completed {
+    background-color: #10b981;
+}

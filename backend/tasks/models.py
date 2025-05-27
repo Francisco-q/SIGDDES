@@ -109,3 +109,25 @@ class ImageUpload(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+
+
+class ReporteAtencion(models.Model):
+    MOTIVOS_CHOICES = [
+        ('noHabiaPersonal', 'No había personal disponible'),
+        ('oficinaCerrada', 'La oficina o espacio estaba cerrado'),
+        ('largoTiempoEspera', 'Tiempo de espera excesivamente largo'),
+        ('personalOcupado', 'El personal estaba ocupado'),
+        ('otro', 'Otro motivo'),
+    ]
+    nombre = models.CharField(max_length=100)
+    email = models.EmailField()
+    telefono = models.CharField(max_length=20, blank=True)
+    motivos_no_atencion = models.JSONField()  # Guarda la lista de motivos seleccionados
+    comentarios = models.TextField(blank=True)
+    campus = models.CharField(max_length=100)
+    tipo_reporte = models.CharField(max_length=50, default="falta_atencion")
+    created_at = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, default="nuevo") 
+
+    def __str__(self):
+        return f"{self.nombre} - {self.campus} - {self.created_at.date()}"

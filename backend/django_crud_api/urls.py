@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from rest_framework.routers import DefaultRouter
-from tasks.views import TotemQRViewSet, ReceptionQRViewSet, PathViewSet, PerfilUsuarioViewSet, ImageUploadView, ImageListView, home, DenunciaViewSet, UserProfileViewSet
+from tasks.views import TotemQRViewSet, ReceptionQRViewSet, PathViewSet, PerfilUsuarioViewSet, ImageUploadView, ImageListView, home, DenunciaViewSet, UserProfileViewSet, ReporteAtencionViewSet
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
@@ -18,6 +18,7 @@ router.register(r'denuncias', DenunciaViewSet, basename='denuncias')
 router.register(r'image-upload', ImageUploadView, basename='image-upload')
 router.register(r'images', ImageListView, basename='image-list')
 router.register(r'user', UserProfileViewSet, basename='user')
+router.register(r'reportes-atencion', ReporteAtencionViewSet, basename='reporteatencion')
 
 schema_view = get_schema_view(
     openapi.Info(

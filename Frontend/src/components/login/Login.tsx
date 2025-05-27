@@ -53,7 +53,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <form onSubmit={handleLogin} className="login-form">
                     <Box className={`login-field ${focusedField === "username" ? "focused" : ""}`}>
                         <TextField
-                            label="Usuario"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             onFocus={() => setFocusedField("username")}
@@ -73,7 +72,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
                     <Box className={`login-field ${focusedField === "password" ? "focused" : ""}`}>
                         <TextField
-                            label="Contraseña"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

@@ -58,6 +58,241 @@
     margin-top: 16px;
 }
 
+/* Estilos para el reporte de atención */
+.openmap-report-container {
+    flex: 1;
+    padding: 24px;
+    overflow: auto;
+    background-color: rgb(255, 255, 255);
+}
+
+.openmap-report-form {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.openmap-report-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, #f9f5ff 0%, #ffffff 100%);
+    border-radius: 16px;
+    border: 2px solid #f0e6ff;
+}
+
+.openmap-report-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+}
+
+.openmap-report-subtitle {
+    color: #64748b;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.openmap-report-section {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.08);
+    border: 1px solid #fecaca;
+    transition: all 0.3s ease;
+}
+
+.openmap-report-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(220, 38, 38, 0.12);
+}
+
+.openmap-report-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #dc2626;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.openmap-report-section-title::before {
+    content: "";
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    border-radius: 2px;
+}
+
+.openmap-report-field {
+    margin-bottom: 20px;
+}
+
+.openmap-report-field .MuiTextField-root {
+    width: 100%;
+}
+
+.openmap-report-field .MuiOutlinedInput-root {
+    border-radius: 12px;
+    background-color: #fafafa;
+    transition: all 0.3s ease;
+}
+
+.openmap-report-field .MuiOutlinedInput-root:hover {
+    background-color: #f5f5f5;
+}
+
+.openmap-report-field .MuiOutlinedInput-root.Mui-focused {
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.openmap-report-field .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+    border-color: #e2e8f0;
+    border-width: 2px;
+    transition: all 0.3s ease;
+}
+
+.openmap-report-field .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    border-color: #cbd5e0;
+}
+
+.openmap-report-field .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: #dc2626;
+    border-width: 2px;
+}
+
+.openmap-report-field .MuiInputLabel-root {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.openmap-report-field .MuiInputLabel-root.Mui-focused {
+    color: #dc2626;
+}
+
+.openmap-report-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.openmap-report-checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #fafafa;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.openmap-report-checkbox-item:hover {
+    background-color: #f5f5f5;
+    border-color: #cbd5e0;
+}
+
+.openmap-report-checkbox-item.checked {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+.openmap-report-checkbox-item .MuiCheckbox-root {
+    color: #dc2626;
+}
+
+.openmap-report-checkbox-item .MuiCheckbox-root.Mui-checked {
+    color: #dc2626;
+}
+
+.openmap-report-submit-button {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+    border-radius: 12px;
+    padding: 16px 48px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: none;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
+    transition: all 0.3s ease;
+    margin-top: 24px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    min-width: 200px;
+}
+
+.openmap-report-submit-button:hover {
+    background: linear-gradient(135deg, #b91c1c, #dc2626);
+    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.4);
+    transform: translateY(-3px);
+}
+
+.openmap-report-submit-button:active {
+    transform: translateY(-1px);
+}
+
+.openmap-report-submit-button:disabled {
+    background: #e2e8f0;
+    color: #a0aec0;
+    box-shadow: none;
+    transform: none;
+}
+
+.openmap-report-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.openmap-report-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.openmap-report-success {
+    text-align: center;
+    padding: 32px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    border-radius: 16px;
+    border: 2px solid #bbf7d0;
+    margin-top: 24px;
+}
+
+.openmap-report-success-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #16a34a;
+    margin-bottom: 12px;
+}
+
+.openmap-report-success-message {
+    color: #64748b;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
 /* Estilos para los botones */
 .openmap-buttons-container {
     display: flex;
@@ -110,5 +345,31 @@
         min-width: 36px;
         height: 36px;
         padding: 6px;
+    }
+
+    .openmap-report-container {
+        padding: 16px;
+    }
+
+    .openmap-report-section {
+        padding: 24px 20px;
+    }
+
+    .openmap-report-header {
+        padding: 20px 16px;
+    }
+
+    .openmap-report-title {
+        font-size: 1.75rem;
+    }
+
+    .openmap-report-subtitle {
+        font-size: 1rem;
+    }
+
+    .openmap-report-submit-button {
+        padding: 14px 32px;
+        font-size: 1rem;
+        min-width: 180px;
     }
 }

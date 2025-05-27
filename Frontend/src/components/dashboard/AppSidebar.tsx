@@ -1,7 +1,6 @@
 "use client"
 
 import {
-    Dashboard as DashboardIcon,
     Logout as LogOutIcon,
     Map as MapIcon,
     Person as ProfileIcon,
@@ -38,12 +37,12 @@ import { useLocation, useNavigate } from "react-router-dom"
 import "./AppSidebar.css"
 
 const campusUniversitarios = [
-    { id: 1, nombre: "Talca", denuncias: 24 },
-    { id: 2, nombre: "Curico", denuncias: 24 },
-    { id: 3, nombre: "Linares", denuncias: 12 },
-    { id: 4, nombre: "Santiago", denuncias: 8 },
-    { id: 5, nombre: "Pehuenche", denuncias: 15 },
-    { id: 6, nombre: "Colchagua", denuncias: 6 },
+    { id: 1, nombre: "Talca" },
+    { id: 2, nombre: "Curico" },
+    { id: 3, nombre: "Linares" },
+    { id: 4, nombre: "Santiago" },
+    { id: 5, nombre: "Pehuenche" },
+    { id: 6, nombre: "Colchagua" },
 ]
 
 interface AppSidebarProps {
@@ -80,10 +79,6 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
         if (path.includes("/mapa2/")) {
             const campus = path.split("/mapa2/")[1]
             setActiveItem(campus)
-        } else if (path.includes("/dashboard")) {
-            setActiveItem("dashboard")
-        } else {
-            setActiveItem("")
         }
     }, [location])
 
@@ -125,10 +120,6 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
         setError(null)
     }
 
-    const handleNavigateToDashboard = () => {
-        navigate("/dashboard")
-        if (isSmallScreen) setIsDrawerOpen(false)
-    }
 
     const toggleCollapse = () => {
         if (isSmallScreen) {
@@ -165,29 +156,6 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                 )}
             </Box>
 
-            <Box className={`app-sidebar-section ${isCollapsed ? "collapsed" : "expanded"}`}>
-                {!isCollapsed && <Typography className="app-sidebar-section-title">DASHBOARD</Typography>}
-                <Paper elevation={0} className="app-sidebar-card">
-                    <Tooltip title={isCollapsed ? "Panel Principal" : ""} placement="right">
-                        <ListItemButton
-                            onClick={handleNavigateToDashboard}
-                            selected={activeItem === "dashboard"}
-                            className={`app-sidebar-list-button ${isCollapsed ? "collapsed" : "expanded"} ${activeItem === "dashboard" ? "selected" : ""
-                                }`}
-                        >
-                            <ListItemIcon className={`app-sidebar-list-icon ${isCollapsed ? "collapsed" : "expanded"}`}>
-                                <DashboardIcon />
-                            </ListItemIcon>
-                            {!isCollapsed && (
-                                <ListItemText
-                                    primary="Panel Principal"
-                                    primaryTypographyProps={{ fontWeight: activeItem === "dashboard" ? 600 : 400 }}
-                                />
-                            )}
-                        </ListItemButton>
-                    </Tooltip>
-                </Paper>
-            </Box>
 
             <Box className={`app-sidebar-section ${isCollapsed ? "collapsed" : "expanded"}`}>
                 {!isCollapsed && <Typography className="app-sidebar-section-title">CAMPUS</Typography>}
@@ -202,9 +170,6 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                             >
                                 <ListItemIcon className={`app-sidebar-list-icon ${isCollapsed ? "collapsed" : "expanded"}`}>
                                     <Badge
-                                        badgeContent={isCollapsed ? campus.denuncias : undefined}
-                                        color="error"
-                                        classes={{ badge: "app-sidebar-badge" }}
                                     >
                                         <MapIcon />
                                     </Badge>
@@ -216,9 +181,6 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
                                             primaryTypographyProps={{ fontWeight: activeItem === campus.nombre ? 600 : 400 }}
                                         />
                                         <Badge
-                                            badgeContent={campus.denuncias}
-                                            color="error"
-                                            classes={{ badge: "app-sidebar-badge expanded" }}
                                         />
                                     </>
                                 )}

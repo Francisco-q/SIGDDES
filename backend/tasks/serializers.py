@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TotemQR, ReceptionQR, Path, PathPoint, Denuncia, UserProfile, ImageUpload
+from .models import TotemQR, ReceptionQR, Path, PathPoint, Denuncia, UserProfile, ImageUpload, ReporteAtencion
 from django.contrib.auth.models import User
 
 class PathPointSerializer(serializers.ModelSerializer):
@@ -80,3 +80,8 @@ class ImageUploadSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         validated_data['uploaded_by'] = request.user if request and request.user.is_authenticated else None
         return super().create(validated_data)
+
+class ReporteAtencionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReporteAtencion
+        fields = '__all__'

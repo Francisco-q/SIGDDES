@@ -1,6 +1,6 @@
 "use client"
 
-import { Description as FileTextIcon, Search as SearchIcon } from "@mui/icons-material"
+import { Close as CloseIcon, Description as FileTextIcon, Notifications as NotificationsIcon, Search as SearchIcon, Warning as WarningIcon } from "@mui/icons-material"
 import {
     Box,
     Card,
@@ -45,6 +45,19 @@ interface Denuncia {
     comentarios: string | null
 }
 
+interface ReporteAtencion {
+    id: number
+    nombre: string
+    email: string
+    telefono: string
+    motivos_no_atencion: string[]
+    comentarios: string
+    campus: string
+    tipo_reporte: string
+    created_at: string
+    estado: "nuevo" | "revisado" | "resuelto"
+}
+
 export default function DashboardDenuncias() {
     const theme = useTheme()
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -64,7 +77,13 @@ export default function DashboardDenuncias() {
     const [estadoLocal, setEstadoLocal] = useState<'pendiente' | 'tomada'>('pendiente')
     const [comentariosLocal, setComentariosLocal] = useState<string>('')
 
+    const [estadoFilter, setEstadoFilter] = useState("")
+    const [searchTerm, setSearchTerm] = useState("")
     const pageSizeOptions = [5, 10, 25, 50]
+
+    const [reportesAtencion, setReportesAtencion] = useState<ReporteAtencion[]>([])
+    const [showAlertas, setShowAlertas] = useState(true)
+    const [alertasNoLeidas, setAlertasNoLeidas] = useState(0)
 
     const getResponsiveClass = () => {
         if (isMobile) return "mobile"
@@ -74,6 +93,136 @@ export default function DashboardDenuncias() {
 
     const responsiveClass = getResponsiveClass()
 
+    // Componente de Alertas de Reportes de Atención
+    const AlertasReportesAtencion = () => {
+        const reportesNuevos = reportesAtencion.filter((r) => r.estado === "nuevo").slice(0, 5)
+
+        return (
+            <Box className="dashboard-alertas-container">
+                <Card className="dashboard-alertas-card">
+                    <CardHeader
+                        title={
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <WarningIcon sx={{ color: "#dc2626" }} />
+                                <Typography variant="h6" sx={{ color: "#dc2626", fontWeight: 600 }}>
+                                    Alertas de Atención ({alertasNoLeidas})
+                                </Typography>
+                                <MuiButton
+                                    size="small"
+                                    onClick={() => setShowAlertas(!showAlertas)}
+                                    sx={{ ml: "auto", minWidth: "auto", p: 0.5 }}
+                                >
+                                    {showAlertas ? <CloseIcon /> : <NotificationsIcon />}
+                                </MuiButton>
+                            </Box>
+                        }
+                        className="dashboard-alertas-header"
+                    />
+                    {showAlertas && (
+                        <CardContent className="dashboard-alertas-content">
+                            {reportesNuevos.length > 0 ? (
+                                <>
+                                    {reportesNuevos.map((reporte) => (
+                                        <Box key={reporte.id} className="dashboard-alerta-item">
+                                            <Box className="dashboard-alerta-info">
+                                                <Typography variant="subtitle2" className="dashboard-alerta-titulo">
+                                                    🚨 Falta de atención reportada - {reporte.campus}
+                                                </Typography>
+                                                <Typography variant="body2" className="dashboard-alerta-usuario">
+                                                    <strong>Reportado por:</strong> {reporte.nombre} ({reporte.email})
+                                                </Typography>
+                                                <Typography variant="caption" className="dashboard-alerta-fecha">
+                                                    📅 {format(new Date(reporte.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                                                </Typography>
+                                                <Typography variant="body2" className="dashboard-alerta-motivos">
+                                                    <strong>Motivos:</strong> {reporte.motivos_no_atencion.map(motivo => {
+                                                        // Formatear los motivos para que sean más legibles
+                                                        const motivosFormateados = {
+                                                            'noHabiaPersonal': 'No había personal disponible',
+                                                            'oficinaCerrada': 'Oficina cerrada',
+                                                            'personalOcupado': 'Personal ocupado',
+                                                            'faltaDeRecursos': 'Falta de recursos',
+                                                            'horarioNoDisponible': 'Horario no disponible',
+                                                            'otro': 'Otro motivo'
+                                                        };
+                                                        return motivosFormateados[motivo as keyof typeof motivosFormateados] || motivo;
+                                                    }).join(', ')}
+                                                </Typography>
+                                                {reporte.comentarios && (
+                                                    <Typography variant="body2" className="dashboard-alerta-comentarios">
+                                                        {reporte.comentarios}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                            <MuiButton
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => handleMarcarReporteRevisado(reporte.id)}
+                                                className="dashboard-alerta-button"
+                                            >
+                                                ✓ Marcar Revisado
+                                            </MuiButton>
+                                        </Box>
+                                    ))}
+                                    {reportesAtencion.filter((r) => r.estado === "nuevo").length > 5 && (
+                                        <Typography variant="caption" sx={{ textAlign: "center", display: "block", mt: 2, color: "#64748b", padding: "16px" }}>
+                                            Y {reportesAtencion.filter((r) => r.estado === "nuevo").length - 5} reportes más...
+                                        </Typography>
+                                    )}
+                                </>
+                            ) : (
+                                <Box className="dashboard-alertas-empty">
+                                    <Typography variant="body2">
+                                        ✅ No hay reportes de atención pendientes en este momento.
+                                    </Typography>
+                                    <Typography variant="caption">
+                                        Los reportes aparecerán aquí cuando los usuarios reporten falta de atención.
+                                    </Typography>
+                                </Box>
+                            )}
+                        </CardContent>
+                    )}
+                </Card>
+            </Box>
+        )
+    }
+
+    const fetchReportesAtencion = async () => {
+        try {
+            const token = localStorage.getItem("access_token")
+            const response = await axios.get("http://localhost:8000/api/reportes-atencion/", {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            const reportes = response.data
+            setReportesAtencion(reportes)
+
+            // Contar reportes no leídos (nuevos)
+            const noLeidos = reportes.filter((r: ReporteAtencion) => r.estado === "nuevo").length
+            setAlertasNoLeidas(noLeidos)
+        } catch (err) {
+            console.error("Error al cargar reportes de atención:", err)
+        }
+    }
+
+    const handleMarcarReporteRevisado = async (reporteId: number) => {
+        try {
+            const token = localStorage.getItem("access_token")
+            await axios.patch(
+                `http://localhost:8000/api/reportes-atencion/${reporteId}/`,
+                { estado: "revisado" },
+                { headers: { Authorization: `Bearer ${token}` } },
+            )
+
+            // Actualizar estado local
+            setReportesAtencion((reportes) => reportes.map((r) => (r.id === reporteId ? { ...r, estado: "revisado" } : r)))
+
+            // Actualizar contador de no leídos
+            setAlertasNoLeidas((prev) => Math.max(0, prev - 1))
+        } catch (error) {
+            console.error("Error al marcar reporte como revisado:", error)
+        }
+    }
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -82,6 +231,10 @@ export default function DashboardDenuncias() {
                     headers: { Authorization: `Bearer ${token}` },
                 })
                 setDenuncias(response.data)
+
+                // Cargar también reportes de atención
+                await fetchReportesAtencion()
+
                 setLoading(false)
             } catch (err) {
                 setError("Error al cargar los datos")
@@ -89,6 +242,10 @@ export default function DashboardDenuncias() {
             }
         }
         fetchData()
+
+        // Configurar polling cada 30 segundos para reportes nuevos
+        const interval = setInterval(fetchReportesAtencion, 30000)
+        return () => clearInterval(interval)
     }, [])
 
     useEffect(() => {
@@ -202,6 +359,7 @@ export default function DashboardDenuncias() {
         <Box className="dashboard-container">
             <Box className={`dashboard-content ${responsiveClass}`}>
                 <Box sx={{ maxWidth: "100%", width: "100%" }}>
+                    <AlertasReportesAtencion />
                     <Card className="dashboard-main-card">
                         <CardHeader
                             title="Casos Recientes"
@@ -429,15 +587,6 @@ export default function DashboardDenuncias() {
                                 )}
                             </Box>
                         </CardContent>
-                        <CardActions className={`dashboard-card-footer ${responsiveClass}`}>
-                            <MuiButton
-                                variant="contained"
-                                size="medium"
-                                className={`dashboard-button dashboard-button-contained ${responsiveClass}`}
-                            >
-                                Ver todas los casos
-                            </MuiButton>
-                        </CardActions>
                     </Card>
                 </Box>
             </Box>

@@ -2,8 +2,8 @@ from django.http import HttpResponse
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions, status, viewsets
-from .models import TotemQR, ReceptionQR, Path, PathPoint, UserProfile, Denuncia, ImageUpload
-from .serializers import TotemQRSerializer, ReceptionQRSerializer, PathSerializer, DenunciaSerializer, UserProfileSerializer, ImageUploadSerializer
+from .models import TotemQR, ReceptionQR, Path, PathPoint, UserProfile, Denuncia, ImageUpload, ReporteAtencion
+from .serializers import TotemQRSerializer, ReceptionQRSerializer, PathSerializer, DenunciaSerializer, UserProfileSerializer, ImageUploadSerializer, ReporteAtencionSerializer
 from .permissions import RoleBasedPermission
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import default_storage
@@ -287,7 +287,7 @@ class DenunciaViewSet(viewsets.ModelViewSet):
             {
                 "type": "paragraph",
                 "content": [
-                    {"type": "text", "text": f"Descripción: {denuncia_data.get('descripcion del caso', 'No especificado')}"}
+                    {"type": "text", "text": f"Descripción: {denuncia_data.get('descripcion', 'No especificado')}"}
                 ]
             },
             {
@@ -389,3 +389,9 @@ class ImageListView(viewsets.ViewSet):
         images = ImageUpload.objects.filter(point_id=point_id, point_type=point_type, campus=campus)
         serializer = ImageUploadSerializer(images, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ReporteAtencionViewSet(viewsets.ModelViewSet):
+    queryset = ReporteAtencion.objects.all()
+    serializer_class = ReporteAtencionSerializer
+    permission_classes = [] 

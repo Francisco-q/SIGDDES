@@ -131,7 +131,8 @@
     background-color: #f7fafc;
     transition: all 0.3s ease;
     font-size: 1rem;
-    padding: 4px 0;
+    padding: 0;
+    position: relative;
 }
 
 .login-field .MuiOutlinedInput-root:hover {
@@ -140,12 +141,14 @@
 
 .login-field .MuiOutlinedInput-root.Mui-focused {
     background-color: white;
-    box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.1);
+    /* Removemos el box-shadow del contenedor y lo ponemos en el outline */
 }
 
 .login-field .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
     border-color: #e2e8f0;
     border-width: 2px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
 }
 
 .login-field .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
@@ -154,6 +157,9 @@
 
 .login-field .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
     border-color: #6200ea;
+    border-width: 2px;
+    /* Efecto de iluminación centrado usando box-shadow en el borde */
+    box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.1);
 }
 
 .login-field .MuiInputLabel-root {
@@ -167,6 +173,26 @@
 
 .login-field .MuiOutlinedInput-input {
     padding: 16px 14px;
+}
+
+/* Ajustar el padding cuando hay InputAdornment */
+.login-field .MuiOutlinedInput-root .MuiInputAdornment-root {
+    margin-left: 4px;
+}
+
+.login-field .MuiOutlinedInput-root .MuiOutlinedInput-input {
+    padding-left: 8px;
+}
+
+/* Iconos de los campos */
+.login-field-icon {
+    color: #a0aec0;
+    transition: color 0.3s ease;
+    font-size: 20px;
+}
+
+.login-field.focused .login-field-icon {
+    color: #6200ea;
 }
 
 /* Botón de login */
@@ -210,6 +236,7 @@
     text-align: center;
     border: 1px solid #feb2b2;
     animation: shake 0.5s ease-in-out;
+    margin-top: 16px;
 }
 
 @keyframes shake {
@@ -326,20 +353,6 @@
     .login-subtitle {
         font-size: 0.875rem;
     }
-}
-
-/* Efectos adicionales */
-.login-field-icon {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #a0aec0;
-    transition: color 0.3s ease;
-}
-
-.login-field.focused .login-field-icon {
-    color: #6200ea;
 }
 
 /* Animación de entrada para los campos */

@@ -217,3 +217,13 @@ export const uploadImages = async (files: File[], pointId: number, pointType: st
   }
   return newImageUrls;
 };
+
+export const createAttentionReport = async (data: any) => {
+  const response = await axiosInstance.post("reportes-atencion/", data, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};

@@ -5,5 +5,6 @@ export const API_CONFIG = {
         IMAGES: '/api/images/',
         TOTEMS: '/api/totems/',
         RECEPCIONES: '/api/recepciones/',
+        TOKEN: 'token/' // Asegúrate de que no incluya /api/ aquí
     },
 };

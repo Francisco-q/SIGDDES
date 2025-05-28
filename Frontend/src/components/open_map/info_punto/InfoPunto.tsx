@@ -3,13 +3,13 @@ import { Box, Button, Dialog, Drawer, IconButton, MenuItem, TextField, Typograph
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { TimePicker } from "@mui/x-date-pickers/TimePicker"
-import axios from "axios"
 import { es } from "date-fns/locale"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import Slider from "react-slick"
 import "slick-carousel/slick/slick-theme.css"
 import "slick-carousel/slick/slick.css"
+import axiosInstance from "../../../services/axiosInstance"
 import type { ReceptionQR, TotemQR } from "../../../types/types"
 import "./InfoPunto.css"
 
@@ -160,7 +160,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
         }
       }
 
-      const response = await axios.get(`http://localhost:8000/api/images/`, config)
+      const response = await axiosInstance.get("images/", config)
 
       const fetchedImages = response.data.map((img: any) => img.image)
 
@@ -196,12 +196,12 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     setQrError(null)
     try {
       const endpoint = isTotem ? "totems" : "recepciones"
-      const response = await axios.post(
-        `http://localhost:8000/api/${endpoint}/${punto.id}/generate_qr/`,
+      const response = await axiosInstance.post(
+        `${endpoint}/${punto.id}/generate_qr/`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        },
+        }
       )
       setQrImage(response.data.qr_image)
     } catch (err: any) {

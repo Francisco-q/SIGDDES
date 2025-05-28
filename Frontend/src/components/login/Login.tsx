@@ -2,9 +2,9 @@
 
 import { Lock as LockIcon, Person as PersonIcon, School as SchoolIcon } from "@mui/icons-material"
 import { Box, Button, InputAdornment, TextField, Typography } from "@mui/material"
-import axios from "axios"
 import type React from "react"
 import { useState } from "react"
+import axiosInstance from "../../services/axiosInstance"
 import "./Login.css"
 
 interface LoginProps {
@@ -24,10 +24,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError("")
 
         try {
-            const response = await axios.post("http://localhost:8000/api/token/", {
+            const response = await axiosInstance.post("token/", {
                 username,
                 password,
-            })
+            });
             localStorage.setItem("access_token", response.data.access)
             localStorage.setItem("refresh_token", response.data.refresh)
             setError("")

@@ -21,24 +21,6 @@
     transition: opacity 0.3s ease-in-out;
 }
 
-/* SOLUCIÓN: Contenedores para los dos conjuntos de marcadores */
-.markers-simple,
-.markers-labeled {
-    transition: opacity 0.3s ease-in-out;
-}
-
-.markers-simple.visible,
-.markers-labeled.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.markers-simple.hidden,
-.markers-labeled.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
 /* Marcadores personalizados con etiquetas */
 .custom-marker-with-label {
     background: transparent !important;
@@ -50,8 +32,6 @@
     flex-direction: column;
     align-items: center;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-    transition: all 0.2s ease-in-out;
-    transform-origin: center bottom;
 }
 
 .marker-icon {
@@ -65,7 +45,6 @@
     border: 2px solid white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
-    position: relative;
 }
 
 .marker-label {
@@ -77,8 +56,6 @@
     white-space: nowrap;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
-    position: relative;
-    z-index: 1;
 }
 
 /* Efectos hover para marcadores */
@@ -233,13 +210,13 @@
 
 /* Animaciones de entrada para elementos del mapa */
 .leaflet-marker-icon {
-    animation: markerAppear 0.3s ease-out;
+    animation: markerAppear 0.5s ease-out;
 }
 
 @keyframes markerAppear {
     from {
         opacity: 0;
-        transform: scale(0.8) translateY(-10px);
+        transform: scale(0.5) translateY(-20px);
     }
 
     to {
@@ -280,25 +257,4 @@
 
 .leaflet-interactive:hover {
     filter: brightness(1.1);
-}
-
-/* Optimizaciones específicas para evitar el problema de reposicionamiento */
-.leaflet-marker-icon {
-    transition: opacity 0.3s ease-in-out !important;
-    will-change: opacity;
-}
-
-.leaflet-marker-shadow {
-    transition: opacity 0.3s ease-in-out !important;
-}
-
-/* Asegurar que los marcadores ocultos no interfieran */
-.markers-simple.hidden .leaflet-marker-icon,
-.markers-labeled.hidden .leaflet-marker-icon {
-    visibility: hidden;
-}
-
-.markers-simple.visible .leaflet-marker-icon,
-.markers-labeled.visible .leaflet-marker-icon {
-    visibility: visible;
 }

@@ -23,12 +23,12 @@ import {
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 import { DatePicker } from "@mui/x-date-pickers/DatePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
-import axios from "axios"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import React from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import axiosInstance from "../../../services/axiosInstance"
 import "./FormComponent.css"
 
 const formSchema = z.object({
@@ -120,7 +120,7 @@ const FormComponent: React.FC<FormComponentProps> = ({ campus, setSubmitted, set
             }
 
             console.log("Enviando datos:", formattedData)
-            const response = await axios.post("http://localhost:8000/api/denuncias/", formattedData, {
+            const response = await axiosInstance.post("denuncias/", formattedData, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${localStorage.getItem("access_token")}`,

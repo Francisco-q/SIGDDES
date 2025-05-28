@@ -1,10 +1,10 @@
 import { Box, Typography } from '@mui/material';
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Home from './components/dashboard/Home';
 import Login from './components/login/Login';
 import MapComponent from './components/open_map/map_components/OpenMap';
+import axiosInstance from './services/axiosInstance';
 
 const PrivateRoute: React.FC<{ role: string | null }> = ({ role }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -19,9 +19,7 @@ const PrivateRoute: React.FC<{ role: string | null }> = ({ role }) => {
       }
 
       try {
-        await axios.get('http://localhost:8000/api/user/current_user/', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        await axiosInstance.get('user/current_user/');
         setIsAuthenticated(true);
         setError(null);
       } catch (error: any) {
@@ -54,9 +52,7 @@ const App: React.FC = () => {
     const fetchUserRole = async () => {
       if (isLoggedIn) {
         try {
-          const response = await axios.get('http://localhost:8000/api/user/current_user/', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
-          });
+          const response = await axiosInstance.get('user/current_user/');
           setRole(response.data.role);
           setError(null);
         } catch (error: any) {

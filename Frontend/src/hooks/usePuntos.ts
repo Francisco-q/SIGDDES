@@ -7,7 +7,7 @@ interface Punto {
   info: string;
   campus: string;
 }
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const usePuntos = (campus: string) => {
   const [puntosPorCampus, setPuntosPorCampus] = useState<{ [key: string]: Punto[] }>({
     Talca: [],
@@ -37,7 +37,7 @@ const usePuntos = (campus: string) => {
   useEffect(() => {
     const cargarPuntos = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/puntos/?campus=${campus}`);
+        const response = await fetch(`${API_BASE_URL}puntos/?campus=${campus}`);
         const data = await response.json();
         setPuntosPorCampus((prevState) => ({
           ...prevState,
@@ -50,7 +50,7 @@ const usePuntos = (campus: string) => {
 
     const cargarPartidas = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/partidas/?campus=${campus}`);
+        const response = await fetch(`${API_BASE_URL}partidas/?campus=${campus}`);
         const data = await response.json();
         setPartidasPorCampus((prevState) => ({
           ...prevState,
@@ -77,7 +77,7 @@ const usePuntos = (campus: string) => {
     const nuevoPunto = { x, y, info: 'Nuevo Punto', campus };
 
     try {
-      const response = await fetch('http://localhost:8000/api/puntos/', {
+      const response = await fetch(`${API_BASE_URL}puntos/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ const usePuntos = (campus: string) => {
     const nuevaPartida = { x, y, info: 'Nuevo Punto de Partida', campus };
 
     try {
-      const response = await fetch('http://localhost:8000/api/partidas/', {
+      const response = await fetch(`${API_BASE_URL}partidas/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ const usePuntos = (campus: string) => {
       const puntoActualizado = { ...puntoSeleccionado, info: nuevaInfo };
 
       try {
-        const response = await fetch(`http://localhost:8000/api/puntos/${puntoSeleccionado.id}/`, {
+        const response = await fetch(`${API_BASE_URL}puntos/${puntoSeleccionado.id}/`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ const usePuntos = (campus: string) => {
   const handleEliminarPunto = async () => {
     if (puntoSeleccionado) {
       try {
-        await fetch(`http://localhost:8000/api/puntos/${puntoSeleccionado.id}/`, {
+        await fetch(`${API_BASE_URL}puntos/${puntoSeleccionado.id}/`, {
           method: 'DELETE',
         });
 

@@ -4,7 +4,7 @@ import axiosInstance from './axiosInstance';
 
 // Create a custom Axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8000/api/',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -70,9 +70,10 @@ api.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const response = await axios.post('http://localhost:8000/api/token/refresh/', {
-          refresh: refreshToken,
-        });
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/'}token/refresh/`,
+          { refresh: refreshToken }
+        );
 
         const newToken = response.data.access;
         localStorage.setItem('access_token', newToken);

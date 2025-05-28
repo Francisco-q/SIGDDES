@@ -1,5 +1,3 @@
-"use client"
-
 import {
     Logout as LogOutIcon,
     Map as MapIcon,
@@ -29,13 +27,12 @@ import {
     useMediaQuery,
     useTheme,
 } from "@mui/material"
-import axios from "axios"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
+import axiosInstance from "../../services/axiosInstance"
 import "./AppSidebar.css"
-
 const campusUniversitarios = [
     { id: 1, nombre: "Talca" },
     { id: 2, nombre: "Curico" },
@@ -99,7 +96,7 @@ export default function AppSidebar({ onLogout }: AppSidebarProps) {
         try {
             const token = localStorage.getItem("access_token")
             console.log("Haciendo GET a /api/usuario/perfil/ con token:", token)
-            const response = await axios.get("http://localhost:8000/api/usuario/perfil/", {
+            const response = await axiosInstance.get("usuario/perfil/", {
                 headers: { Authorization: `Bearer ${token}` },
             })
             console.log("Datos recibidos:", response.data)

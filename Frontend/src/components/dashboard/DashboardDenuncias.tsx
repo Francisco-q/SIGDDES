@@ -314,7 +314,7 @@ export default function DashboardDenuncias() {
     const totalPages = Math.ceil(denunciasFiltradas.length / pageSize)
     const paginatedDenuncias = denunciasFiltradas.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
-    const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    const handlePageChange = (_: React.ChangeEvent<unknown>, page: number) => {
         setCurrentPage(page)
     }
 

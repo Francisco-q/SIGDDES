@@ -44,9 +44,9 @@ const OpenMap: React.FC = () => {
   const [role, setRole] = useState<string | null>('guest'); // Default role to 'guest' if not authenticated
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [, setIsAuthenticated] = useState<boolean | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [, setFormErrors] = useState<Record<string, string>>({});
   const [initialPoint, setInitialPoint] = useState<TotemQR | ReceptionQR | null>(null);
   const [showPointNames, setShowPointNames] = useState(false);
 
@@ -186,7 +186,7 @@ const OpenMap: React.FC = () => {
   }, [campus]);
 
   useEffect(() => {
-    const { src, error } = getMapaSrc(campus);
+    const { error } = getMapaSrc(campus);
     if (error) {
       setSvgError(error);
     } else {

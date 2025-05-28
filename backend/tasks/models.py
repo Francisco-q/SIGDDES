@@ -20,7 +20,7 @@ class UserProfile(models.Model):
 # Señal para crear UserProfile al crear un User
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    if created:
+    if created and not UserProfile.objects.filter(user=instance).exists():
         UserProfile.objects.create(user=instance)
 
 class TotemQR(models.Model):

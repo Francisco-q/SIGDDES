@@ -170,17 +170,6 @@ const FormComponent: React.FC<FormComponentProps> = ({ campus, setSubmitted, set
             {/* Header */}
             <Box className="form-component-header">
                 <Typography className="form-component-title">Formulario de Acogida</Typography>
-                <Typography className="form-component-subtitle">
-                    Complete el formulario para reportar un incidente relacionado con violencia o discriminación de género. Toda
-                    la información será tratada de manera confidencial.
-                </Typography>
-            </Box>
-
-            {/* Indicador de progreso */}
-            <Box className="form-component-progress">
-                <Box className="form-component-progress-step active" />
-                <Box className="form-component-progress-step active" />
-                <Box className="form-component-progress-step" />
             </Box>
 
             <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>

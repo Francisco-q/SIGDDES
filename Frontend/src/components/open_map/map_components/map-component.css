@@ -1,0 +1,304 @@
+/* Contenedor principal del mapa */
+.map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos del mapa mejorado */
+.enhanced-map {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    z-index: 1;
+}
+
+/* Overlay del campus con transición suave */
+.campus-overlay {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* SOLUCIÓN: Contenedores para los dos conjuntos de marcadores */
+.markers-simple,
+.markers-labeled {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.markers-simple.visible,
+.markers-labeled.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.markers-simple.hidden,
+.markers-labeled.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Marcadores personalizados con etiquetas */
+.custom-marker-with-label {
+    background: transparent !important;
+    border: none !important;
+}
+
+.marker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: all 0.2s ease-in-out;
+    transform-origin: center bottom;
+}
+
+.marker-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.marker-label {
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+/* Efectos hover para marcadores */
+.marker-hover .marker-icon {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.marker-hover .marker-label {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Círculos de ayuda durante la creación */
+.creation-helper-circle {
+    animation: pulse-circle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-circle {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+}
+
+/* Paths interactivos */
+.interactive-path {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.interactive-path:hover {
+    filter: drop-shadow(0 2px 4px rgba(98, 0, 234, 0.4));
+}
+
+/* Path en construcción */
+.creating-path {
+    animation: dash-animation 2s linear infinite;
+}
+
+@keyframes dash-animation {
+    0% {
+        stroke-dashoffset: 0;
+    }
+
+    100% {
+        stroke-dashoffset: 20;
+    }
+}
+
+/* Indicadores de estado */
+.map-status-indicator {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.status-badge {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: slideInDown 0.3s ease-out;
+}
+
+.creating-path-badge {
+    color: #f59e0b;
+    border-left: 4px solid #f59e0b;
+}
+
+.creating-totem-badge {
+    color: #6200ea;
+    border-left: 4px solid #6200ea;
+}
+
+.creating-reception-badge {
+    color: #dc2626;
+    border-left: 4px solid #dc2626;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Controles de zoom mejorados */
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border: none !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: #6200ea !important;
+    color: white !important;
+    transform: scale(1.05);
+}
+
+/* Mejoras para dispositivos móviles */
+@media (max-width: 768px) {
+    .marker-label {
+        font-size: 10px;
+        padding: 1px 6px;
+    }
+
+    .marker-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .status-badge {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    .map-status-indicator {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+    }
+}
+
+/* Animaciones de entrada para elementos del mapa */
+.leaflet-marker-icon {
+    animation: markerAppear 0.3s ease-out;
+}
+
+@keyframes markerAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Mejoras para la accesibilidad */
+.leaflet-container:focus {
+    outline: 2px solid #6200ea;
+    outline-offset: 2px;
+}
+
+/* Estilos para el modo oscuro */
+@media (prefers-color-scheme: dark) {
+    .status-badge {
+        background: rgba(31, 41, 55, 0.95);
+        color: #f9fafb;
+        border-color: rgba(75, 85, 99, 0.3);
+    }
+
+    .leaflet-control-zoom a {
+        background: rgba(31, 41, 55, 0.95) !important;
+        color: #f9fafb !important;
+    }
+}
+
+/* Efectos de transición suaves */
+.leaflet-fade-anim .leaflet-tile {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Mejoras para la selección de elementos */
+.leaflet-interactive {
+    cursor: pointer;
+}
+
+.leaflet-interactive:hover {
+    filter: brightness(1.1);
+}
+
+/* Optimizaciones específicas para evitar el problema de reposicionamiento */
+.leaflet-marker-icon {
+    transition: opacity 0.3s ease-in-out !important;
+    will-change: opacity;
+}
+
+.leaflet-marker-shadow {
+    transition: opacity 0.3s ease-in-out !important;
+}
+
+/* Asegurar que los marcadores ocultos no interfieran */
+.markers-simple.hidden .leaflet-marker-icon,
+.markers-labeled.hidden .leaflet-marker-icon {
+    visibility: hidden;
+}
+
+.markers-simple.visible .leaflet-marker-icon,
+.markers-labeled.visible .leaflet-marker-icon {
+    visibility: visible;
+}

@@ -238,7 +238,7 @@
 .app-sidebar-modal-field {
     display: flex;
     flex-direction: column;
-    padding: 16px;
+    padding: 5px;
     background-color: #f9f5ff;
     border-radius: 12px;
     margin-bottom: 24px;

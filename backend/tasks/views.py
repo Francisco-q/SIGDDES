@@ -8,7 +8,7 @@ from .permissions import RoleBasedPermission
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import default_storage
 from django.conf import settings
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 import math
 import requests
 import qrcode
@@ -20,7 +20,7 @@ def home(request):
 
 class TotemQRViewSet(viewsets.ModelViewSet):
     serializer_class = TotemQRSerializer
-    permission_classes = [RoleBasedPermission]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = TotemQR.objects.all()
@@ -28,6 +28,12 @@ class TotemQRViewSet(viewsets.ModelViewSet):
         if campus is not None:
             queryset = queryset.filter(campus=campus)
         return queryset
+    
+    def get_permissions(self):
+        # Restrict POST, PUT, DELETE to authenticated users with appropriate roles
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'generate_qr']:
+            return [RoleBasedPermission()]
+        return [AllowAny()]  # Allow GET and nearest_path for all
 
     @action(detail=True, methods=['get'])
     def nearest_path(self, request, pk=None):
@@ -99,7 +105,7 @@ class TotemQRViewSet(viewsets.ModelViewSet):
 
 class ReceptionQRViewSet(viewsets.ModelViewSet):
     serializer_class = ReceptionQRSerializer
-    permission_classes = [RoleBasedPermission]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = ReceptionQR.objects.all()
@@ -107,6 +113,12 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
         if campus is not None:
             queryset = queryset.filter(campus=campus)
         return queryset
+
+    def get_permissions(self):
+        # Restrict POST, PUT, DELETE to authenticated users with appropriate roles
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'generate_qr']:
+            return [RoleBasedPermission()]
+        return [AllowAny()]  # Allow GET for all
 
     @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
     def generate_qr(self, request, pk=None):
@@ -155,7 +167,7 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
 
 class PathViewSet(viewsets.ModelViewSet):
     serializer_class = PathSerializer
-    permission_classes = [RoleBasedPermission]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = Path.objects.all()
@@ -163,6 +175,12 @@ class PathViewSet(viewsets.ModelViewSet):
         if campus is not None:
             queryset = queryset.filter(campus=campus)
         return queryset
+
+    def get_permissions(self):
+        # Restrict POST, PUT, DELETE to authenticated users with appropriate roles
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [RoleBasedPermission()]
+        return [AllowAny()]  # Allow GET for all
 
 class UserProfileViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -185,10 +203,10 @@ class UserProfileViewSet(viewsets.ViewSet):
                 'role': 'guest'
             }, status=200)
 
-class PerfilUsuarioViewSet(viewsets.GenericViewSet):  # Cambiado de ViewSet a GenericViewSet
+class PerfilUsuarioViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
-    queryset = UserProfile.objects.all()  # Definimos el queryset
+    queryset = UserProfile.objects.all()
 
     def get_queryset(self):
         return UserProfile.objects.filter(user=self.request.user)
@@ -214,7 +232,6 @@ class PerfilUsuarioViewSet(viewsets.GenericViewSet):  # Cambiado de ViewSet a Ge
         except UserProfile.DoesNotExist:
             return Response({'detail': 'Perfil de usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
-
 class DenunciaViewSet(viewsets.ModelViewSet):
     queryset = Denuncia.objects.all()
     serializer_class = DenunciaSerializer
@@ -230,8 +247,9 @@ class DenunciaViewSet(viewsets.ModelViewSet):
             print(f"No se pudo crear el issue en Jira: {e}")
             # Opcional: decidir si fallar la creación de la denuncia si Jira falla
             # raise e
+
     def partial_update(self, request, *args, **kwargs):
-            return super().partial_update(request, *args, **kwargs)
+        return super().partial_update(request, *args, **kwargs)
             
     def create_jira_issue(self, denuncia_data):
         url = f"{settings.JIRA_API_URL}/rest/api/3/issue"
@@ -326,7 +344,6 @@ class DenunciaViewSet(viewsets.ModelViewSet):
             error_details = response.text
             raise Exception(f"Error de Jira: {error_details}")
 
-
 class ImageUploadView(viewsets.ViewSet):
     permission_classes = [RoleBasedPermission]
     parser_classes = (MultiPartParser, FormParser)
@@ -368,7 +385,7 @@ class ImageUploadView(viewsets.ViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class ImageListView(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Allow unauthenticated access for GET
 
     def list(self, request, *args, **kwargs):
         point_id = request.query_params.get('point_id')
@@ -390,8 +407,13 @@ class ImageListView(viewsets.ViewSet):
         serializer = ImageUploadSerializer(images, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def get_permissions(self):
+        # Restrict any future non-GET actions (e.g., POST, DELETE) to authenticated users
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated()]
+        return [AllowAny()]  # Allow GET for all
 
 class ReporteAtencionViewSet(viewsets.ModelViewSet):
     queryset = ReporteAtencion.objects.all()
     serializer_class = ReporteAtencionSerializer
-    permission_classes = [] 
+    permission_classes = [AllowAny]

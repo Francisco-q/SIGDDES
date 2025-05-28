@@ -13,6 +13,9 @@ import "slick-carousel/slick/slick.css"
 import type { ReceptionQR, TotemQR } from "../../../types/types"
 import "./InfoPunto.css"
 
+// Define LazyLoadTypes explicitly to avoid type mismatch
+type LazyLoadTypes = "ondemand" | "progressive" | "anticipated"
+
 interface InfoPuntoProps {
   open: boolean
   punto: TotemQR | ReceptionQR | null
@@ -76,7 +79,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     return new Promise((resolve) => {
       const img = new Image()
       img.onload = () => {
-        // Verificar que la imagen tenga dimensiones válidas
         if (img.width > 0 && img.height > 0) {
           resolve(true)
         } else {
@@ -100,7 +102,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       const scheduleStr = "schedule" in punto ? (punto as ReceptionQR).schedule || "" : ""
       setSchedule(scheduleStr)
 
-      // Parse schedule string to set time pickers
       if (scheduleStr) {
         const { opening, closing } = parseSchedule(scheduleStr)
         setOpeningTime(opening)
@@ -145,20 +146,24 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const fetchImages = async () => {
     if (!punto) return
     try {
-      const response = await axios.get(`http://localhost:8000/api/images/`, {
+      const config: any = {
         params: {
           point_id: punto.id,
           point_type: pointType,
           campus: punto.campus,
         },
-        headers: {
+      }
+
+      if (role !== "guest" && localStorage.getItem("access_token")) {
+        config.headers = {
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      })
+        }
+      }
+
+      const response = await axios.get(`http://localhost:8000/api/images/`, config)
 
       const fetchedImages = response.data.map((img: any) => img.image)
 
-      // Verificar que las imágenes se carguen correctamente
       const validImages = []
       for (const imgUrl of fetchedImages) {
         const isValid = await checkImageUrl(imgUrl)
@@ -257,7 +262,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       const scheduleStr = "schedule" in punto ? (punto as ReceptionQR).schedule || "" : ""
       setSchedule(scheduleStr)
 
-      // Reset time pickers
       if (scheduleStr) {
         const { opening, closing } = parseSchedule(scheduleStr)
         setOpeningTime(opening)
@@ -304,7 +308,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     pauseOnHover: true,
     cssEase: "ease-in-out",
     dotsClass: "slick-dots custom-dots",
-    lazyLoad: "ondemand",
+    lazyLoad: "ondemand" as LazyLoadTypes, // Explicitly cast to LazyLoadTypes
     fade: true,
     customPaging: () => (
       <div
@@ -320,7 +324,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     ),
   }
 
-  // Usar Drawer en lugar de Dialog para crear un panel lateral
   return (
     <>
       <Drawer
@@ -336,7 +339,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
             overflowY: "auto",
           },
           "& .MuiBackdrop-root": {
-            backgroundColor: "rgba(0, 0, 0, 0)", // Quitar la opacidad del fondo
+            backgroundColor: "rgba(0, 0, 0, 0)",
           },
         }}
         className="info-punto-drawer"
@@ -698,7 +701,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
         </Box>
       </Drawer>
 
-      {/* Modal para visualizar imágenes a pantalla completa */}
       <Dialog
         open={openImageModal}
         onClose={() => setOpenImageModal(false)}

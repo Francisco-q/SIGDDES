@@ -42,10 +42,9 @@ interface MapComponentProps {
     setWarningMessage: (message: string) => void;
     setWarningModalOpen: (open: boolean) => void;
     onPathClick: (path: Path) => void;
-    showPointNames: boolean; // Add this prop
+    showPointNames: boolean;
 }
 
-// Componente para hacer las polilíneas clicables
 const ClickpolylinesClickHandler: React.FC<{
     positions: [number, number][];
     path: Path;
@@ -78,8 +77,8 @@ const createLabelIcon = (icon: L.Icon, name: string) => {
         </div>
       </div>
     `,
-        iconSize: [(icon.options.iconSize! as [number, number])[0], (icon.options.iconSize! as [number, number])[1] + 20], // Increase height to accommodate label
-        iconAnchor: [(icon.options.iconAnchor! as [number, number])[0], (icon.options.iconAnchor! as [number, number])[1] + 10], // Adjust anchor to center the icon+label
+        iconSize: [(icon.options.iconSize! as [number, number])[0], (icon.options.iconSize! as [number, number])[1] + 20],
+        iconAnchor: [(icon.options.iconAnchor! as [number, number])[0], (icon.options.iconAnchor! as [number, number])[1] + 10],
         shadowUrl: icon.options.shadowUrl,
         shadowSize: icon.options.shadowSize,
     });
@@ -129,7 +128,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const MapClickHandler: React.FC = () => {
         useMapEvents({
             click(e) {
-                if (!['admin', 'superuser'].includes(role as string)) return;
+                if (!['admin', 'superuser'].includes(role as string)) {
+                    setWarningMessage("Solo administradores pueden interactuar con el mapa para crear puntos o caminos.");
+                    setWarningModalOpen(true);
+                    return;
+                }
 
                 const { lat, lng } = e.latlng;
 
@@ -154,6 +157,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         });
         return null;
     };
+
     const handlePointClick = (point: TotemQR | ReceptionQR) => {
         setSelectedPoint(point);
         setIsModalOpen(true);
@@ -183,8 +187,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     opacity={1}
                 />
             )}
-            <MapClickHandler />
-            {isCreatingPath && (
+            {['admin', 'superuser'].includes(role as string) && <MapClickHandler />}
+            {isCreatingPath && ['admin', 'superuser'].includes(role as string) && (
                 <>
                     {totems.map(totem => (
                         <Circle
@@ -228,7 +232,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     ))}
                 </>
             )}
-            {currentPathPoints.length > 0 && <Polyline positions={currentPathPoints} color="red" weight={5} />}
+            {currentPathPoints.length > 0 && ['admin', 'superuser'].includes(role as string) && (
+                <Polyline positions={currentPathPoints} color="red" weight={5} />
+            )}
             {showPaths &&
                 paths.map(path => (
                     <ClickpolylinesClickHandler

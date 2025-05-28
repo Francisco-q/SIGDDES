@@ -4,7 +4,6 @@ import { Close as CloseIcon, Description as FileTextIcon, Notifications as Notif
 import {
     Box,
     Card,
-    CardActions,
     CardContent,
     CardHeader,
     FormControl,
@@ -19,7 +18,7 @@ import {
     TextField,
     Typography,
     useMediaQuery,
-    useTheme,
+    useTheme
 } from "@mui/material"
 import axios from "axios"
 import { format } from "date-fns"
@@ -548,15 +547,6 @@ export default function DashboardDenuncias() {
                                             </Box>
                                         ))}
                                     </CardContent>
-                                    <CardActions sx={{ justifyContent: "center", pb: 2 }}>
-                                        <MuiButton
-                                            variant="outlined"
-                                            size="small"
-                                            className={`dashboard-button dashboard-button-outline ${responsiveClass}`}
-                                        >
-                                            Ver informe completo
-                                        </MuiButton>
-                                    </CardActions>
                                 </Card>
 
                                 {!isLaptop && (

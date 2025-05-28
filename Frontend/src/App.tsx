@@ -44,7 +44,6 @@ const PrivateRoute: React.FC<{ role: string | null }> = ({ role }) => {
   return <Outlet />;
 };
 
-
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('access_token'));
   const [role, setRole] = useState<string | null>(null);
@@ -62,8 +61,10 @@ const App: React.FC = () => {
           setError(null);
         } catch (error: any) {
           console.error('Error fetching user role:', error);
-          handleLogout(); // Si ocurre un error, cierra la sesión y redirige al login
+          handleLogout();
         }
+      } else {
+        setRole('guest'); // Default to guest role if not logged in
       }
       setLoading(false);
     };
@@ -107,9 +108,9 @@ const App: React.FC = () => {
         )}
         <Routes>
           <Route path="/" element={isLoggedIn ? <Navigate to="/home" replace /> : <Login onLogin={handleLogin} />} />
-          <Route element={<PrivateRoute role={role} />} >
+          <Route path="/mapa2/:campus" element={<MapComponent />} /> {/* Public route */}
+          <Route element={<PrivateRoute role={role} />}>
             <Route path="/home" element={<Home onLogout={handleLogout} />} />
-            <Route path="/mapa2/:campus" element={<MapComponent />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

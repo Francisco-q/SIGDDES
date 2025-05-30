@@ -65,8 +65,7 @@ class TotemQRViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Generar URL para el QR
-        qr_url = f"${process.env.REACT_APP_API_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"
-        
+        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"
         # Crear el QR
         qr = qrcode.QRCode(
             version=1,
@@ -127,8 +126,7 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Generar URL para el QR
-        qr_url = f"${process.env.REACT_APP_API_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"
-        # Crear el QR
+        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"# Crear el QR
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,

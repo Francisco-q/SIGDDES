@@ -43,6 +43,9 @@ interface MapComponentProps {
     setWarningModalOpen: (open: boolean) => void;
     onPathClick: (path: Path) => void;
     showPointNames: boolean;
+    shortestPath?: {
+        points: { latitude: number; longitude: number }[];
+    };
 }
 
 const ClickpolylinesClickHandler: React.FC<{
@@ -106,6 +109,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setWarningModalOpen,
     onPathClick,
     showPointNames,
+    shortestPath,
 }) => {
     const svgBounds: [[number, number], [number, number]] = [
         [51.505, -0.09],
@@ -234,6 +238,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
             )}
             {currentPathPoints.length > 0 && ['admin', 'superuser'].includes(role as string) && (
                 <Polyline positions={currentPathPoints} color="red" weight={5} />
+            )}
+            {shortestPath && (
+                <Polyline
+                    positions={shortestPath.points.map((p) => [p.latitude, p.longitude])}
+                    color="purple"
+                    weight={6}
+                    dashArray="12,8"
+                />
             )}
             {showPaths &&
                 paths.map(path => (

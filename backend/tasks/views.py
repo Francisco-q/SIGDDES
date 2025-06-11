@@ -1,4 +1,6 @@
 from django.http import HttpResponse
+import networkx as nx
+from django.db.models import Q
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions, status, viewsets
@@ -35,29 +37,139 @@ class TotemQRViewSet(viewsets.ModelViewSet):
             return [RoleBasedPermission()]
         return [AllowAny()]  # Allow GET and nearest_path for all
 
+    def calculate_distance(self, p1_lat, p1_lon, p2_lat, p2_lon):
+        """Calcula la distancia euclidiana entre dos puntos."""
+        return math.sqrt((p1_lat - p2_lat) ** 2 + (p1_lon - p2_lon) ** 2)
+
+    def build_graph(self, campus):
+        """Construye un grafo con los caminos reales del campus."""
+        G = nx.Graph()
+        paths = Path.objects.filter(campus=campus).prefetch_related('points')
+        
+        # Añadir nodos y aristas desde los caminos
+        for path in paths:
+            points = path.points.order_by('order')
+            for i in range(len(points) - 1):
+                p1 = points[i]
+                p2 = points[i + 1]
+                G.add_edge(
+                    (p1.latitude, p1.longitude),
+                    (p2.latitude, p2.longitude),
+                    weight=self.calculate_distance(p1.latitude, p1.longitude, p2.latitude, p2.longitude)
+                )
+        
+        # Añadir tótems y recepciones como nodos y conectarlos a los caminos cercanos
+        totems = TotemQR.objects.filter(campus=campus)
+        receptions = ReceptionQR.objects.filter(campus=campus)
+        all_points = list(points.values_list('latitude', 'longitude', flat=False))
+
+        for totem in totems:
+            G.add_node((totem.latitude, totem.longitude))
+            for point in all_points:
+                if abs(totem.latitude - point[0]) < 0.0001 and abs(totem.longitude - point[1]) < 0.0001:
+                    G.add_edge(
+                        (totem.latitude, totem.longitude),
+                        point,
+                        weight=0  # Conexión directa si están en el mismo punto
+                    )
+
+        for reception in receptions:
+            G.add_node((reception.latitude, reception.longitude))
+            for point in all_points:
+                if abs(reception.latitude - point[0]) < 0.0001 and abs(reception.longitude - point[1]) < 0.0001:
+                    G.add_edge(
+                        (reception.latitude, reception.longitude),
+                        point,
+                        weight=0
+                    )
+
+        return G
     @action(detail=True, methods=['get'])
     def nearest_path(self, request, pk=None):
         totem = self.get_object()
+        G = self.build_graph(totem.campus)
         receptions = ReceptionQR.objects.filter(campus=totem.campus)
+
         if not receptions:
-            return Response({"error": "No hay recepciones disponibles en este campus"}, status=404)
+            return Response({"error": "No hay recepciones en este campus"}, status=404)
 
-        nearest_reception = min(receptions, key=lambda r: math.sqrt(
-            (r.latitude - totem.latitude) ** 2 + (r.longitude - totem.longitude) ** 2
-        ))
+        shortest_path = None
+        min_distance = float('inf')
+        totem_coords = (totem.latitude, totem.longitude)
 
-        path = {
-            "name": f"Camino desde {totem.name} a {nearest_reception.name}",
-            "points": [
-                {"latitude": totem.latitude, "longitude": totem.longitude, "order": 1},
-                {"latitude": nearest_reception.latitude, "longitude": nearest_reception.longitude, "order": 2},
-            ],
+        for reception in receptions:
+            reception_coords = (reception.latitude, reception.longitude)
+            try:
+                path = nx.shortest_path(G, totem_coords, reception_coords, weight='weight')
+                distance = nx.shortest_path_length(G, totem_coords, reception_coords, weight='weight')
+                if distance < min_distance:
+                    min_distance = distance
+                    shortest_path = path
+            except nx.NetworkXNoPath:
+                continue
+
+        if not shortest_path:
+            return Response({"error": "No se encontró un camino a ninguna recepción"}, status=404)
+
+        # Modificar para incluir el campo 'order'
+        path_points = [{"latitude": lat, "longitude": lon, "order": idx} for idx, (lat, lon) in enumerate(shortest_path)]
+        path_data = {
+            "name": f"Camino desde {totem.name} a la recepción más cercana",
+            "points": path_points,
             "campus": totem.campus
         }
-        serializer = PathSerializer(data=path)
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.data)
 
+        serializer = PathSerializer(data=path_data)
+        if serializer.is_valid():
+            return Response(serializer.data)
+        else:
+            print("Errores de serialización:", serializer.errors)  # Para depuración
+            return Response(serializer.errors, status=400)
+        # Obtener el tótem solicitado
+        totem = self.get_object()
+        
+        # Construir el grafo (asegúrate de que build_graph esté implementado)
+        G = self.build_graph(totem.campus)
+        
+        # Obtener recepciones en el mismo campus
+        receptions = ReceptionQR.objects.filter(campus=totem.campus)
+        if not receptions:
+            return Response({"error": "No hay recepciones en este campus"}, status=404)
+
+        # Calcular el camino más corto
+        shortest_path = None
+        min_distance = float('inf')
+        totem_coords = (totem.latitude, totem.longitude)
+
+        for reception in receptions:
+            reception_coords = (reception.latitude, reception.longitude)
+            try:
+                path = nx.shortest_path(G, totem_coords, reception_coords, weight='weight')
+                distance = nx.shortest_path_length(G, totem_coords, reception_coords, weight='weight')
+                if distance < min_distance:
+                    min_distance = distance
+                    shortest_path = path
+            except nx.NetworkXNoPath:
+                continue
+
+        # Verificar si se encontró un camino
+        if not shortest_path:
+            return Response({"error": "No se encontró un camino a ninguna recepción"}, status=404)
+
+        # Estructurar los datos del camino
+        path_points = [{"latitude": lat, "longitude": lon} for lat, lon in shortest_path]
+        path_data = {
+            "name": f"Camino desde {totem.name} a la recepción más cercana",
+            "points": path_points,
+            "campus": totem.campus
+        }
+
+        # Serializar los datos
+        serializer = PathSerializer(data=path_data)
+        if serializer.is_valid():
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=400)
     @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
     def generate_qr(self, request, pk=None):
         totem = self.get_object()

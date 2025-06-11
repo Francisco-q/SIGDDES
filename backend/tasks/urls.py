@@ -14,6 +14,7 @@ router.register(r'usuario', PerfilUsuarioViewSet, basename='usuario')
 router.register(r'images', ImageListView, basename='images')
 router.register(r'upload', ImageUploadViewSet, basename='upload')
 router.register(r'reportes-atencion', ReporteAtencionViewSet, basename='reporteatencion')
+router.register(r'totems', TotemQRViewSet, basename='totemqr')
 
 urlpatterns = [
     path('', home),

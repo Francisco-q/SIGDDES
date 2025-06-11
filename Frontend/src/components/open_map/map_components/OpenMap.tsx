@@ -40,6 +40,7 @@ import "./OpenMap.css";
 const OpenMap: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
   const [searchParams] = useSearchParams();
+  const [shortestPath, setShortestPath] = useState<{ points: { latitude: number; longitude: number; }[]; } | undefined>(undefined);
   const navigate = useNavigate();
   const [role, setRole] = useState<string | null>('guest'); // Default role to 'guest' if not authenticated
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,22 @@ const OpenMap: React.FC = () => {
     comentarios: "",
     campus: campus || "",
   });
+
+  useEffect(() => {
+    const pointId = searchParams.get("pointId");
+    const pointType = searchParams.get("pointType");
+    if (pointId && pointType === "totem" && campus) {
+      axiosInstance.get(`totems/${pointId}/nearest_path/`)
+        .then(res => {
+          console.log("Respuesta exitosa:", res.data);
+          setShortestPath(res.data);
+        })
+        .catch(err => {
+          console.error("Error al obtener el camino:", err.response?.data || err.message);
+          setError("No se pudo obtener el camino más corto. Revisa la consola para más detalles.");
+        });
+    }
+  }, [searchParams, campus]);
 
   useEffect(() => {
     if (warningModalOpen) {
@@ -597,6 +614,7 @@ const OpenMap: React.FC = () => {
               campus={campus || ""}
               totems={totems}
               receptions={receptions}
+              shortestPath={shortestPath}
               paths={paths}
               showPaths={showPaths}
               isCreatingPath={isCreatingPath}

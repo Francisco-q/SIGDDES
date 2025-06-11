@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { Path, ReceptionQR, TotemQR } from '../../../types/types';
 import SetView from '../MapaUtils/SetView';
@@ -46,6 +46,7 @@ interface MapComponentProps {
     shortestPath?: {
         points: { latitude: number; longitude: number }[];
     };
+    infoPuntoOpen: boolean;
 }
 
 const ClickpolylinesClickHandler: React.FC<{
@@ -87,6 +88,57 @@ const createLabelIcon = (icon: L.Icon, name: string) => {
     });
 };
 
+const MapUpdater: React.FC<{ initialPoint: TotemQR | ReceptionQR | null; infoPuntoOpen: boolean }> = ({ initialPoint, infoPuntoOpen }) => {
+    const map = useMap();
+    const [hasSetInitialView, setHasSetInitialView] = useState(false);
+    const [mapState, setMapState] = useState<{ center: [number, number]; zoom: number } | null>(null);
+    const [userInteracted, setUserInteracted] = useState(false);
+
+    // Detect user interaction (zoom or pan)
+    useMapEvents({
+        zoomend: () => setUserInteracted(true),
+        moveend: () => setUserInteracted(true),
+    });
+
+    // Set initial view for initialPoint only once
+    useEffect(() => {
+        if (initialPoint && !hasSetInitialView && !userInteracted) {
+            const { latitude, longitude } = initialPoint;
+            console.log('Setting initial view:', { latitude, longitude, zoom: 20 });
+            map.setView([latitude, longitude], 20);
+            setHasSetInitialView(true);
+        }
+    }, [initialPoint, map, hasSetInitialView, userInteracted]);
+
+    // Handle InfoPunto open/close
+    useEffect(() => {
+        if (infoPuntoOpen) {
+            setMapState({
+                center: [map.getCenter().lat, map.getCenter().lng],
+                zoom: map.getZoom(),
+            });
+        } else {
+            setMapState(null);
+        }
+        // Debounce invalidateSize to prevent rapid calls
+        const timer = setTimeout(() => {
+            console.log('Invalidating size, infoPuntoOpen:', infoPuntoOpen);
+            map.invalidateSize();
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [infoPuntoOpen, map]);
+
+    // Restore map state when InfoPunto is open
+    useEffect(() => {
+        if (infoPuntoOpen && mapState && !userInteracted) {
+            console.log('Restoring map state:', mapState);
+            map.setView(mapState.center, mapState.zoom);
+        }
+    }, [infoPuntoOpen, mapState, map, userInteracted]);
+
+    return null;
+};
+
 const MapComponent: React.FC<MapComponentProps> = ({
     campus,
     totems,
@@ -110,24 +162,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onPathClick,
     showPointNames,
     shortestPath,
+    infoPuntoOpen,
 }) => {
     const svgBounds: [[number, number], [number, number]] = [
         [51.505, -0.09],
         [51.51, -0.1],
     ];
-
-    const ZoomToInitialPoint: React.FC<{ initialPoint: TotemQR | ReceptionQR | null }> = ({ initialPoint }) => {
-        const map = useMap();
-
-        useEffect(() => {
-            if (initialPoint) {
-                const { latitude, longitude } = initialPoint;
-                map.setView([latitude, longitude], 20);
-            }
-        }, [initialPoint, map]);
-
-        return null;
-    };
 
     const MapClickHandler: React.FC = () => {
         useMapEvents({
@@ -174,9 +214,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
             maxZoom={22}
             minZoom={10}
             zoomControl={false}
+            style={{ height: '100%', width: '100%' }}
         >
-            <ZoomToInitialPoint initialPoint={initialPoint} />
-            {!isCreatingPath && <SetView bounds={svgBounds} zoom={18} />}
+            <MapUpdater initialPoint={initialPoint} infoPuntoOpen={infoPuntoOpen} />
+            {/* Only render SetView if no initialPoint and not creating a path */}
+            {!isCreatingPath && !initialPoint && <SetView bounds={svgBounds} zoom={18} />}
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

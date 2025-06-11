@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import TotemQR, ReceptionQR, Path, PathPoint, Denuncia, UserProfile, ImageUpload, ReporteAtencion
 from django.contrib.auth.models import User
+import re
+from django.utils import timezone
 
 class PathPointSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,9 +31,31 @@ class TotemQRSerializer(serializers.ModelSerializer):
         fields = ['id', 'latitude', 'longitude', 'name', 'description', 'campus', 'status', 'qr_image']
 
 class ReceptionQRSerializer(serializers.ModelSerializer):
+    effectiveStatus = serializers.SerializerMethodField()
+
     class Meta:
         model = ReceptionQR
-        fields = ['id', 'latitude', 'longitude', 'name', 'description', 'campus', 'schedule', 'status', 'qr_image']
+        fields = ['id', 'latitude', 'longitude', 'name', 'description', 'campus', 'schedule', 'status', 'qr_image', 'effectiveStatus']
+
+    def get_effectiveStatus(self, obj):
+        if not obj.schedule:
+            return "No Operativo"
+        try:
+            match = re.match(r"(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})", obj.schedule)
+            if not match:
+                return "No Operativo"
+            open_time, close_time = match.groups()
+            open_hours, open_minutes = map(int, open_time.split(":"))
+            close_hours, close_minutes = map(int, close_time.split(":"))
+            now = timezone.now()
+            current_minutes = now.hour * 60 + now.minute
+            open_minutes_total = open_hours * 60 + open_minutes
+            close_minutes_total = close_hours * 60 + close_minutes
+            if close_minutes_total < open_minutes_total:
+                return current_minutes >= open_minutes_total or current_minutes <= close_minutes_total
+            return current_minutes >= open_minutes_total and current_minutes <= close_minutes_total
+        except Exception:
+            return "No Operativo"
 
 class DenunciaSerializer(serializers.ModelSerializer):
     class Meta:

@@ -168,6 +168,7 @@ backend/venv/
 backend/db.sqlite3
 backend/__pycache__/
 backend/.env
+backend/media/
 *.pyc
 *.pyo
 *.pyd

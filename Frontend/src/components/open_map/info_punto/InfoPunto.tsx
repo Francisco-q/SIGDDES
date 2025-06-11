@@ -32,6 +32,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const [description, setDescription] = useState("")
   const [schedule, setSchedule] = useState("")
   const [status, setStatus] = useState("Operativo")
+  const [effectiveStatus, setEffectiveStatus] = useState("Operativo") // New state for computed status
   const [errors, setErrors] = useState<{ name?: string }>({})
   const [isDeleting, setIsDeleting] = useState(false)
   const [images, setImages] = useState<string[]>([])
@@ -50,6 +51,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const isEditable = role === "admin" || role === "superuser"
   const pointType = isTotem ? "totem" : "reception"
 
+  // Function to parse schedule and extract opening/closing times
   const parseSchedule = (scheduleStr: string) => {
     try {
       const regex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/
@@ -75,6 +77,35 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     return { opening: null, closing: null }
   }
 
+  // Function to check if current time is within schedule
+  const isWithinSchedule = (opening: Date | null, closing: Date | null) => {
+    if (!opening || !closing) return false // No schedule means not operational
+
+    const now = new Date()
+    const currentTime = now.getHours() * 60 + now.getMinutes()
+    const openingTime = opening.getHours() * 60 + opening.getMinutes()
+    const closingTime = closing.getHours() * 60 + closing.getMinutes()
+
+    // Handle cases where closing time is past midnight (e.g., 22:00 - 02:00)
+    if (closingTime < openingTime) {
+      return currentTime >= openingTime || currentTime <= closingTime
+    }
+    return currentTime >= openingTime && currentTime <= closingTime
+  }
+
+  // Update effective status based on schedule and current time
+  const updateEffectiveStatus = () => {
+    if (isTotem || !punto || !("schedule" in punto)) {
+      setEffectiveStatus(punto?.status || "Operativo")
+      return
+    }
+
+    const { opening, closing } = parseSchedule((punto as ReceptionQR).schedule || "")
+    const isOperational = isWithinSchedule(opening, closing)
+    setEffectiveStatus(isOperational ? "Operativo" : "No Operativo")
+  }
+
+  // Check image URL validity
   const checkImageUrl = (url: string) => {
     return new Promise((resolve) => {
       const img = new Image()
@@ -95,6 +126,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     })
   }
 
+  // Initialize punto data
   useEffect(() => {
     if (punto && open) {
       setName(punto.name)
@@ -112,6 +144,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       }
 
       setStatus(punto.status || "Operativo")
+      updateEffectiveStatus() // Compute initial effective status
       setQrImage(punto.qr_image || null)
       setErrors({})
       setIsEditing(false)
@@ -119,6 +152,14 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     }
   }, [punto, open])
 
+  // Update effective status every minute
+  useEffect(() => {
+    updateEffectiveStatus() // Initial check
+    const interval = setInterval(updateEffectiveStatus, 60 * 1000) // Check every minute
+    return () => clearInterval(interval) // Cleanup on unmount
+  }, [punto, isEditing])
+
+  // Check if content is scrollable
   useEffect(() => {
     const checkScrollable = () => {
       if (contentRef.current) {
@@ -131,12 +172,14 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     return () => window.removeEventListener("resize", checkScrollable)
   }, [isEditing, images, newImagePreviews, qrImage])
 
+  // Fetch images when punto changes
   useEffect(() => {
     if (punto && open && typeof punto.id === "number") {
       fetchImages()
     }
   }, [punto, open])
 
+  // Update schedule when time pickers change
   useEffect(() => {
     if (isEditing) {
       updateScheduleFromTimePickers()
@@ -161,9 +204,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       }
 
       const response = await axiosInstance.get("images/", config)
-
       const fetchedImages = response.data.map((img: any) => img.image)
-
       const validImages = []
       for (const imgUrl of fetchedImages) {
         const isValid = await checkImageUrl(imgUrl)
@@ -173,7 +214,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
           console.warn(`Imagen no válida o no accesible: ${imgUrl}`)
         }
       }
-
       setImages(validImages)
       console.log("Imágenes cargadas y verificadas:", validImages)
     } catch (error) {
@@ -227,7 +267,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       ...punto,
       name: name.trim(),
       description: description.trim(),
-      status,
+      status, // Use manually selected status in edit mode
       ...(isTotem ? {} : { schedule: schedule.trim() }),
       imageUrls: images,
       qr_image: qrImage,
@@ -249,7 +289,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
           hour12: false,
         })
       }
-
       const newSchedule = `${formatTime(openingTime)} - ${formatTime(closingTime)}`
       setSchedule(newSchedule)
     }
@@ -272,6 +311,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       }
 
       setStatus(punto.status || "Operativo")
+      updateEffectiveStatus() // Recompute status
       setQrImage(punto.qr_image || null)
       setErrors({})
       setNewImagePreviews([])
@@ -308,7 +348,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     pauseOnHover: true,
     cssEase: "ease-in-out",
     dotsClass: "slick-dots custom-dots",
-    lazyLoad: "ondemand" as LazyLoadTypes, // Explicitly cast to LazyLoadTypes
+    lazyLoad: "ondemand" as LazyLoadTypes,
     fade: true,
     customPaging: () => (
       <div
@@ -574,14 +614,14 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                         </div>
                       </Box>
                     ) : (
-                      <Box className="no-images-placeholder" sx={{ mt: 2 }}>
+                      <Box className="no-images-placeholder" sx={{ mt: 4 }}>
                         <Typography variant="body1" sx={{ color: "text.secondary" }}>
                           No hay imágenes disponibles
                         </Typography>
                       </Box>
                     )}
                     {qrImage && (
-                      <Box className="qr-container" sx={{ mt: 2 }}>
+                      <Box className="qr-container" sx={{ mt: 4 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: "text.secondary" }}>
                           Código QR:
                         </Typography>
@@ -606,7 +646,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                         </Box>
                       </Box>
                     )}
-                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mt: 2, mb: 0.5, color: "text.secondary" }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mt: 4, mb: 0.5, color: "text.secondary" }}>
                       Nombre:
                     </Typography>
                     <Typography variant="body1" sx={{ mb: 2 }}>
@@ -631,8 +671,8 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                     <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: "text.secondary" }}>
                       Estado:
                     </Typography>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      {punto.status}
+                    <Typography variant="body1" sx={{ mb: 2, color: effectiveStatus === "Operativo" ? "green" : "red" }}>
+                      {effectiveStatus}
                     </Typography>
                   </>
                 )}
@@ -705,10 +745,9 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
         open={openImageModal}
         onClose={() => setOpenImageModal(false)}
         maxWidth="xl"
-        fullWidth
         sx={{
           "& .MuiDialog-paper": {
-            backgroundColor: "rgba(0, 0, 0, 0.95)",
+            backgroundColor: "rgba(0, 0,0.95)",
             boxShadow: "none",
             margin: 0,
             maxWidth: "100vw",
@@ -736,9 +775,9 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
               top: 16,
               right: 16,
               color: "white",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              backgroundColor: "rgba(0,0,0,0.5)",
               "&:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                backgroundColor: "rgba(0,0,0,0.7)",
               },
             }}
           >
@@ -752,7 +791,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                 maxWidth: "95%",
                 maxHeight: "90%",
                 objectFit: "contain",
-                boxShadow: "0 0 20px rgba(0, 0, 0, 0.5)",
+                boxShadow: "0 0 20px rgba(0,0,0,0.5)",
               }}
             />
           )}

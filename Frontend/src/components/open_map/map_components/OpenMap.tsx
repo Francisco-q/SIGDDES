@@ -40,9 +40,9 @@ import "./OpenMap.css";
 const OpenMap: React.FC = () => {
   const { campus } = useParams<{ campus: string }>();
   const [searchParams] = useSearchParams();
-  const [shortestPath, setShortestPath] = useState<{ points: { latitude: number; longitude: number; }[]; } | undefined>(undefined);
+  const [shortestPath, setShortestPath] = useState<{ points: { latitude: number; longitude: number }[] } | undefined>(undefined);
   const navigate = useNavigate();
-  const [role, setRole] = useState<string | null>('guest'); // Default role to 'guest' if not authenticated
+  const [role, setRole] = useState<string | null>('guest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -93,7 +93,7 @@ const OpenMap: React.FC = () => {
   const [selectedPath, setSelectedPath] = useState<Path | null>(null);
   const [isPathModalOpen, setIsPathModalOpen] = useState(false);
 
-  // Estados para el reporte de atención
+  // Report states
   const [reportSubmitted, setReportSubmitted] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportData, setReportData] = useState({
@@ -158,7 +158,7 @@ const OpenMap: React.FC = () => {
       const accessToken = localStorage.getItem("access_token");
       if (!accessToken) {
         setIsAuthenticated(false);
-        setRole('guest'); // Set guest role for unauthenticated users
+        setRole('guest');
         setLoading(false);
         return;
       }
@@ -171,8 +171,8 @@ const OpenMap: React.FC = () => {
       } catch (error: any) {
         console.error("Error validating token:", error);
         setIsAuthenticated(false);
-        setRole('guest'); // Set guest role on token validation failure
-        setError(null); // Don't show error for guests
+        setRole('guest');
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -181,7 +181,7 @@ const OpenMap: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (campus) { // Load data for all roles, including guest
+    if (campus) {
       const loadData = async () => {
         try {
           const [totemsData, receptionsData, pathsData] = await Promise.all([
@@ -211,7 +211,6 @@ const OpenMap: React.FC = () => {
     }
   }, [campus]);
 
-  // Actualizar campus en reportData cuando cambie
   useEffect(() => {
     setReportData((prev) => ({ ...prev, campus: campus || "" }));
   }, [campus]);
@@ -499,7 +498,7 @@ const OpenMap: React.FC = () => {
     }
   };
 
-  // Funciones para el reporte de atención
+  // Report handlers
   const handleReportInputChange = (field: string, value: string) => {
     setReportData((prev) => ({ ...prev, [field]: value }));
   };
@@ -514,13 +513,11 @@ const OpenMap: React.FC = () => {
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validaciones básicas
     if (!reportData.nombre.trim() || !reportData.email.trim()) {
       setError("Por favor complete los campos obligatorios (nombre y email).");
       return;
     }
 
-    // Verificar que al menos un motivo esté seleccionado
     const motivosSeleccionados = Object.values(reportData.motivos).some((motivo) => motivo);
     if (!motivosSeleccionados) {
       setError("Por favor seleccione al menos un motivo.");
@@ -531,7 +528,6 @@ const OpenMap: React.FC = () => {
     setError(null);
 
     try {
-      // Preparar datos para envío
       const reportPayload = {
         nombre: reportData.nombre.trim(),
         email: reportData.email.trim(),
@@ -546,13 +542,11 @@ const OpenMap: React.FC = () => {
 
       console.log("Enviando reporte de atención:", reportPayload);
 
-      // Enviar reporte al backend
       const response = await createAttentionReport(reportPayload);
 
       console.log("Reporte enviado exitosamente:", response.data);
       setReportSubmitted(true);
 
-      // Reset del formulario
       setReportData({
         nombre: "",
         email: "",
@@ -633,11 +627,12 @@ const OpenMap: React.FC = () => {
               setWarningModalOpen={setWarningModalOpen}
               onPathClick={handlePathClick}
               showPointNames={showPointNames}
+              infoPuntoOpen={isModalOpen} // Pass isModalOpen as infoPuntoOpen
             />
           ) : (
             <Box className="openmap-error">
               <Typography>No se encontró un mapa para el campus seleccionado.</Typography>
-              {role !== 'guest' && ( // Hide Home button for guests
+              {role !== 'guest' && (
                 <Button variant="contained" color="primary" onClick={() => navigate("/home")}>
                   Volver a la página principal
                 </Button>
@@ -649,7 +644,7 @@ const OpenMap: React.FC = () => {
 
       {tabValue === 1 && (
         <Box className="openmap-form-container">
-          {role === 'guest' ? ( // Restrict Entrevista tab for guests
+          {role === 'guest' ? (
             <Box sx={{ textAlign: "center", mt: 10 }}>
               <Typography variant="h5">Por favor, inicia sesión para acceder a la entrevista de acogida.</Typography>
               <Button variant="contained" color="primary" onClick={() => navigate("/")}>
@@ -737,9 +732,7 @@ const OpenMap: React.FC = () => {
                   </Typography>
 
                   <FormGroup className="openmap-report-checkbox-group">
-                    <Box
-                      className={`openmap-report-checkbox-item ${reportData.motivos.noHabiaPersonal ? "checked" : ""}`}
-                    >
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.noHabiaPersonal ? "checked" : ""}`}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -751,9 +744,7 @@ const OpenMap: React.FC = () => {
                       />
                     </Box>
 
-                    <Box
-                      className={`openmap-report-checkbox-item ${reportData.motivos.oficinaCerrada ? "checked" : ""}`}
-                    >
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.oficinaCerrada ? "checked" : ""}`}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -765,9 +756,7 @@ const OpenMap: React.FC = () => {
                       />
                     </Box>
 
-                    <Box
-                      className={`openmap-report-checkbox-item ${reportData.motivos.largoTiempoEspera ? "checked" : ""}`}
-                    >
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.largoTiempoEspera ? "checked" : ""}`}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -779,9 +768,7 @@ const OpenMap: React.FC = () => {
                       />
                     </Box>
 
-                    <Box
-                      className={`openmap-report-checkbox-item ${reportData.motivos.personalOcupado ? "checked" : ""}`}
-                    >
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.personalOcupado ? "checked" : ""}`}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -860,7 +847,7 @@ const OpenMap: React.FC = () => {
       )}
 
       <Box className="openmap-buttons-container">
-        {role !== 'guest' && ( // Hide Home button for guests
+        {role !== 'guest' && (
           <Tooltip title="Volver a la página principal">
             <Button
               onClick={handleGoHome}

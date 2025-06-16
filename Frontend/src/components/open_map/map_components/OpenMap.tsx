@@ -255,6 +255,15 @@ const OpenMap: React.FC = () => {
       setWarningModalOpen(true);
       return;
     }
+    const defaultSchedule = {
+      lunes: { enabled: true, time: "08:00 - 17:00" },
+      martes: { enabled: true, time: "08:00 - 17:00" },
+      miercoles: { enabled: true, time: "08:00 - 17:00" },
+      jueves: { enabled: true, time: "08:00 - 17:00" },
+      viernes: { enabled: true, time: "08:00 - 17:00" },
+      sabado: { enabled: false, time: "" },
+      domingo: { enabled: false, time: "" },
+    };
     const newReception = {
       latitude: lat,
       longitude: lng,
@@ -262,18 +271,21 @@ const OpenMap: React.FC = () => {
       description: "",
       imageUrls: [],
       campus: campus || "",
-      schedule: "",
+      schedule: defaultSchedule,
       status: "Operativo",
     };
     try {
-      const response = await axiosInstance.post("recepciones/", newReception);
+      console.log("Enviando payload:", JSON.stringify(newReception, null, 2)); // Depuración
+      const response = await axiosInstance.post("recepciones/", newReception); // Línea 269
       const createdReception = response.data;
       setReceptions([...receptions, createdReception]);
       setSelectedPoint(createdReception);
       setIsModalOpen(true);
     } catch (error: any) {
-      console.error("Error al crear la recepción:", error);
-      setWarningMessage("No se pudo crear la Recepción QR.");
+      console.error("Error al crear la recepción:", error); // Línea 275
+      const errorDetails = error.response?.data || "Error desconocido";
+      console.error("Errores de validación:", errorDetails);
+      setWarningMessage(`No se pudo crear la Recepción QR: ${JSON.stringify(errorDetails)}`);
       setWarningModalOpen(true);
     }
   };

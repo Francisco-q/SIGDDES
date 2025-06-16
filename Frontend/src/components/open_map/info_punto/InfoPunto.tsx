@@ -1,11 +1,23 @@
 import CloseIcon from "@mui/icons-material/Close"
-import { Box, Button, Dialog, Drawer, IconButton, MenuItem, TextField, Typography } from "@mui/material"
+import {
+  Box,
+  Button,
+  Checkbox,
+  Dialog,
+  Drawer,
+  FormControlLabel,
+  IconButton,
+  MenuItem,
+  Switch,
+  TextField,
+  Typography,
+} from "@mui/material"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { TimePicker } from "@mui/x-date-pickers/TimePicker"
 import { es } from "date-fns/locale"
 import type React from "react"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Slider from "react-slick"
 import "slick-carousel/slick/slick-theme.css"
 import "slick-carousel/slick/slick.css"
@@ -15,6 +27,12 @@ import "./InfoPunto.css"
 
 // Define LazyLoadTypes explicitly to avoid type mismatch
 type LazyLoadTypes = "ondemand" | "progressive" | "anticipated"
+
+// Define day schedule type
+interface DaySchedule {
+  openingTime: Date | null
+  closingTime: Date | null
+}
 
 interface InfoPuntoProps {
   open: boolean
@@ -30,9 +48,9 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [schedule, setSchedule] = useState("")
+  const [schedule, setSchedule] = useState<{ [key: string]: { enabled: boolean; time: string } } | null>(null)
   const [status, setStatus] = useState("Operativo")
-  const [effectiveStatus, setEffectiveStatus] = useState("Operativo") // New state for computed status
+  const [effectiveStatus, setEffectiveStatus] = useState("Operativo")
   const [errors, setErrors] = useState<{ name?: string }>({})
   const [isDeleting, setIsDeleting] = useState(false)
   const [images, setImages] = useState<string[]>([])
@@ -46,66 +64,97 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const contentRef = useRef<HTMLDivElement>(null)
   const [openingTime, setOpeningTime] = useState<Date | null>(null)
   const [closingTime, setClosingTime] = useState<Date | null>(null)
+  const [selectedDays, setSelectedDays] = useState<boolean[]>([true, true, true, true, true, false, false])
+  const [useUniformSchedule, setUseUniformSchedule] = useState(true)
+  const [daySchedules, setDaySchedules] = useState<DaySchedule[]>(Array(7).fill({ openingTime: null, closingTime: null }))
 
+  const daysOfWeek = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
   const isTotem = !!punto && !("schedule" in punto)
   const isEditable = role === "admin" || role === "superuser"
   const pointType = isTotem ? "totem" : "reception"
 
-  // Function to parse schedule and extract opening/closing times
-  const parseSchedule = (scheduleStr: string) => {
+  const parseSchedule = (scheduleData: string | object) => {
     try {
-      const regex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/
-      const match = scheduleStr.match(regex)
-      if (match) {
-        const [_, openTime, closeTime] = match
+      const scheduleObj = typeof scheduleData === "string" ? JSON.parse(scheduleData) : scheduleData
+      const result: { opening: Date | null; closing: Date | null } = { opening: null, closing: null }
+      const newDaySchedules = Array(7).fill({ openingTime: null, closingTime: null })
+      const newSelectedDays = Array(7).fill(false)
 
-        const setTimeFromString = (timeStr: string) => {
-          const [hours, minutes] = timeStr.split(":").map(Number)
-          const date = new Date()
-          date.setHours(hours, minutes, 0, 0)
-          return date
+      daysOfWeek.forEach((day, index) => {
+        const key = day.toLowerCase()
+        if (scheduleObj[key] && scheduleObj[key].enabled) {
+          newSelectedDays[index] = true
+          const [openTime, closeTime] = scheduleObj[key].time.split(" - ")
+          newDaySchedules[index] = {
+            openingTime: setTimeFromString(openTime),
+            closingTime: setTimeFromString(closeTime),
+          }
+          if (!result.opening && !result.closing) {
+            result.opening = newDaySchedules[index].openingTime
+            result.closing = newDaySchedules[index].closingTime
+          }
         }
+      })
 
-        return {
-          opening: setTimeFromString(openTime),
-          closing: setTimeFromString(closeTime),
-        }
-      }
+      setSelectedDays(newSelectedDays)
+      setDaySchedules(newDaySchedules)
+      setUseUniformSchedule(
+        newDaySchedules.every((ds, i) =>
+          !newSelectedDays[i] ||
+          (ds.openingTime?.getTime() === newDaySchedules[0].openingTime?.getTime() &&
+            ds.closingTime?.getTime() === newDaySchedules[0].closingTime?.getTime())
+        )
+      )
+      return result
     } catch (error) {
       console.error("Error parsing schedule:", error)
+      return { opening: null, closing: null }
     }
-    return { opening: null, closing: null }
   }
 
-  // Function to check if current time is within schedule
-  const isWithinSchedule = (opening: Date | null, closing: Date | null) => {
-    if (!opening || !closing) return false // No schedule means not operational
+  const setTimeFromString = (timeStr: string) => {
+    const [hours, minutes] = timeStr.split(":").map(Number)
+    const date = new Date()
+    date.setHours(hours, minutes, 0, 0)
+    return date
+  }
+
+  const isWithinSchedule = () => {
+    if (!punto || isTotem) return punto?.status === "Operativo"
+    const scheduleData = "schedule" in punto ? (punto as ReceptionQR).schedule : null
+    if (!scheduleData) return false
 
     const now = new Date()
+    const currentDay = now.getDay() === 0 ? 6 : now.getDay() - 1
     const currentTime = now.getHours() * 60 + now.getMinutes()
-    const openingTime = opening.getHours() * 60 + opening.getMinutes()
-    const closingTime = closing.getHours() * 60 + closing.getMinutes()
 
-    // Handle cases where closing time is past midnight (e.g., 22:00 - 02:00)
-    if (closingTime < openingTime) {
-      return currentTime >= openingTime || currentTime <= closingTime
+    try {
+      const scheduleObj = typeof scheduleData === "string" ? JSON.parse(scheduleData) : scheduleData
+      const dayKey = daysOfWeek[currentDay].toLowerCase()
+      if (!scheduleObj[dayKey]?.enabled) return false
+      const [openTime, closeTime] = scheduleObj[dayKey].time.split(" - ")
+      const opening = setTimeFromString(openTime)
+      const closing = setTimeFromString(closeTime)
+      const openingTime = opening.getHours() * 60 + opening.getMinutes()
+      const closingTime = closing.getHours() * 60 + closing.getMinutes()
+      if (closingTime < openingTime) {
+        return currentTime >= openingTime || currentTime <= closingTime
+      }
+      return currentTime >= openingTime && currentTime <= closingTime
+    } catch (error) {
+      console.error("Error checking schedule:", error)
+      return false
     }
-    return currentTime >= openingTime && currentTime <= closingTime
   }
 
-  // Update effective status based on schedule and current time
   const updateEffectiveStatus = () => {
-    if (isTotem || !punto || !("schedule" in punto)) {
+    if (isTotem || !punto) {
       setEffectiveStatus(punto?.status || "Operativo")
       return
     }
-
-    const { opening, closing } = parseSchedule((punto as ReceptionQR).schedule || "")
-    const isOperational = isWithinSchedule(opening, closing)
-    setEffectiveStatus(isOperational ? "Operativo" : "No Operativo")
+    setEffectiveStatus(isWithinSchedule() ? "Operativo" : "No Operativo")
   }
 
-  // Check image URL validity
   const checkImageUrl = (url: string) => {
     return new Promise((resolve) => {
       const img = new Image()
@@ -126,25 +175,42 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     })
   }
 
-  // Initialize punto data
   useEffect(() => {
     if (punto && open) {
       setName(punto.name)
       setDescription(punto.description || "")
-      const scheduleStr = "schedule" in punto ? (punto as ReceptionQR).schedule || "" : ""
-      setSchedule(scheduleStr)
-
-      if (scheduleStr) {
-        const { opening, closing } = parseSchedule(scheduleStr)
-        setOpeningTime(opening)
-        setClosingTime(closing)
+      const scheduleData = "schedule" in punto ? (punto as ReceptionQR).schedule : null
+      if (scheduleData) {
+        if (typeof scheduleData === "object" && scheduleData !== null) {
+          setSchedule(scheduleData as any)
+          const { opening, closing } = parseSchedule(JSON.stringify(scheduleData)) // Convertir a cadena para parseSchedule
+        } else if (typeof scheduleData === "string" && scheduleData) {
+          try {
+            const parsed = JSON.parse(scheduleData)
+            setSchedule(parsed)
+            const { opening, closing } = parseSchedule(scheduleData)
+            setOpeningTime(opening)
+            setClosingTime(closing)
+          } catch {
+            setSchedule(null)
+            setOpeningTime(null)
+            setClosingTime(null)
+          }
+        } else {
+          setSchedule(null)
+          setOpeningTime(null)
+          setClosingTime(null)
+        }
       } else {
+        setSchedule(null)
         setOpeningTime(null)
         setClosingTime(null)
+        setSelectedDays([true, true, true, true, true, false, false])
+        setDaySchedules(Array(7).fill({ openingTime: null, closingTime: null }))
+        setUseUniformSchedule(true)
       }
-
       setStatus(punto.status || "Operativo")
-      updateEffectiveStatus() // Compute initial effective status
+      updateEffectiveStatus()
       setQrImage(punto.qr_image || null)
       setErrors({})
       setIsEditing(false)
@@ -152,14 +218,22 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     }
   }, [punto, open])
 
-  // Update effective status every minute
   useEffect(() => {
-    updateEffectiveStatus() // Initial check
-    const interval = setInterval(updateEffectiveStatus, 60 * 1000) // Check every minute
-    return () => clearInterval(interval) // Cleanup on unmount
-  }, [punto, isEditing])
+    if (!open) {
+      // Limpia el foco cuando se cierra el Drawer
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }
+  }, [open]);
 
-  // Check if content is scrollable
+
+  useEffect(() => {
+    updateEffectiveStatus()
+    const interval = setInterval(updateEffectiveStatus, 60 * 1000)
+    return () => clearInterval(interval)
+  }, [punto, isEditing, selectedDays])
+
   useEffect(() => {
     const checkScrollable = () => {
       if (contentRef.current) {
@@ -172,19 +246,59 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     return () => window.removeEventListener("resize", checkScrollable)
   }, [isEditing, images, newImagePreviews, qrImage])
 
-  // Fetch images when punto changes
   useEffect(() => {
     if (punto && open && typeof punto.id === "number") {
       fetchImages()
     }
   }, [punto, open])
 
-  // Update schedule when time pickers change
-  useEffect(() => {
-    if (isEditing) {
-      updateScheduleFromTimePickers()
+  const updateScheduleFromTimePickers = useCallback(() => {
+    if (!isEditing) return
+
+    const formatTime = (date: Date | null) =>
+      date ? date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }) : ""
+
+    if (!selectedDays.some((day) => day)) {
+      setSchedule(null)
+      return
     }
-  }, [openingTime, closingTime, isEditing])
+
+    const newScheduleObj: any = {}
+    let hasValidSchedule = false
+
+    if (useUniformSchedule) {
+      if (openingTime && closingTime) {
+        const timeStr = `${formatTime(openingTime)} - ${formatTime(closingTime)}`
+        daysOfWeek.forEach((day, index) => {
+          newScheduleObj[day.toLowerCase()] = {
+            enabled: selectedDays[index],
+            time: selectedDays[index] ? timeStr : "",
+          }
+          if (selectedDays[index]) hasValidSchedule = true
+        })
+        setSchedule(hasValidSchedule ? newScheduleObj : null)
+        setDaySchedules(
+          selectedDays.map((enabled) => (enabled ? { openingTime, closingTime } : { openingTime: null, closingTime: null }))
+        )
+      }
+    } else {
+      daysOfWeek.forEach((day, index) => {
+        const ds = daySchedules[index]
+        if (selectedDays[index] && ds.openingTime && ds.closingTime) {
+          const timeStr = `${formatTime(ds.openingTime)} - ${formatTime(ds.closingTime)}`
+          newScheduleObj[day.toLowerCase()] = { enabled: true, time: timeStr }
+          hasValidSchedule = true
+        } else {
+          newScheduleObj[day.toLowerCase()] = { enabled: selectedDays[index], time: "" }
+        }
+      })
+      setSchedule(hasValidSchedule ? newScheduleObj : null)
+    }
+  }, [isEditing, openingTime, closingTime, selectedDays, useUniformSchedule, daySchedules])
+
+  useEffect(() => {
+    updateScheduleFromTimePickers()
+  }, [updateScheduleFromTimePickers])
 
   const fetchImages = async () => {
     if (!punto) return
@@ -203,7 +317,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
         }
       }
 
-      const response = await axiosInstance.get("images/", config)
+      const response = await axiosInstance.get("/images/", config)
       const fetchedImages = response.data.map((img: any) => img.image)
       const validImages = []
       for (const imgUrl of fetchedImages) {
@@ -251,6 +365,11 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     }
   }
 
+  const handleDrawerClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
+    // Puedes agregar lógica específica para el backdrop click aquí si es necesario
+    onClose();
+  };
+
   const handleDownloadQr = () => {
     if (qrImage && punto) {
       const link = document.createElement("a")
@@ -263,34 +382,47 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const handleSave = async () => {
     if (!punto || !validate()) return
 
+    const validStatus = status === 'Operativo' ? 'Operativo' : 'No Operativo';
+
     const updatedPoint = {
-      ...punto,
       name: name.trim(),
       description: description.trim(),
-      status, // Use manually selected status in edit mode
-      ...(isTotem ? {} : { schedule: schedule.trim() }),
-      imageUrls: images,
+      validStatus,
+      schedule: isTotem ? undefined : schedule || {},
       qr_image: qrImage,
     }
 
-    onSave(updatedPoint)
-    setImageFiles(Array.from((document.querySelectorAll('input[type="file"]')[0] as HTMLInputElement)?.files || []))
-    await fetchImages()
-    setNewImagePreviews([])
-    setIsEditing(false)
-  }
+    try {
+      const response = await axiosInstance.patch(`/${isTotem ? "totems" : "recepciones"}/${punto.id}/`, updatedPoint, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      })
 
-  const updateScheduleFromTimePickers = () => {
-    if (openingTime && closingTime) {
-      const formatTime = (date: Date) => {
-        return date.toLocaleTimeString("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
+      const files = Array.from((document.querySelector('input[type="file"]') as HTMLInputElement)?.files || [])
+      if (files.length > 0) {
+        const formData = new FormData()
+        files.forEach((file) => formData.append("file", file))
+        formData.append("point_id", punto.id.toString())
+        formData.append("point_type", isTotem ? "totem" : "reception")
+        formData.append("campus", punto.campus || "")
+
+        await axiosInstance.post("/images/", formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "multipart/form-data",
+          },
         })
       }
-      const newSchedule = `${formatTime(openingTime)} - ${formatTime(closingTime)}`
-      setSchedule(newSchedule)
+
+      onSave(response.data)
+      await fetchImages()
+      setImageFiles(files)
+      setNewImagePreviews([])
+      setIsEditing(false)
+    } catch (error) {
+      console.error("Error saving point:", error)
+      setErrors({ name: "Error al guardar los cambios. Inténtalo de nuevo." })
     }
   }
 
@@ -298,20 +430,40 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     if (punto) {
       setName(punto.name)
       setDescription(punto.description || "")
-      const scheduleStr = "schedule" in punto ? (punto as ReceptionQR).schedule || "" : ""
-      setSchedule(scheduleStr)
-
-      if (scheduleStr) {
-        const { opening, closing } = parseSchedule(scheduleStr)
-        setOpeningTime(opening)
-        setClosingTime(closing)
+      const scheduleData = "schedule" in punto ? (punto as ReceptionQR).schedule : null
+      if (scheduleData) {
+        if (typeof scheduleData === "object" && scheduleData !== null) {
+          setSchedule(scheduleData as any)
+          const { opening, closing } = parseSchedule(JSON.stringify(scheduleData))
+          setOpeningTime(opening)
+          setClosingTime(closing)
+        } else if (typeof scheduleData === "string" && scheduleData) {
+          try {
+            const parsed = JSON.parse(scheduleData)
+            setSchedule(parsed)
+            const { opening, closing } = parseSchedule(scheduleData)
+            setOpeningTime(opening)
+            setClosingTime(closing)
+          } catch {
+            setSchedule(null)
+            setOpeningTime(null)
+            setClosingTime(null)
+          }
+        } else {
+          setSchedule(null)
+          setOpeningTime(null)
+          setClosingTime(null)
+        }
       } else {
+        setSchedule(null)
         setOpeningTime(null)
         setClosingTime(null)
+        setSelectedDays([true, true, true, true, true, false, false])
+        setDaySchedules(Array(7).fill({ openingTime: null, closingTime: null }))
+        setUseUniformSchedule(true)
       }
-
       setStatus(punto.status || "Operativo")
-      updateEffectiveStatus() // Recompute status
+      updateEffectiveStatus()
       setQrImage(punto.qr_image || null)
       setErrors({})
       setNewImagePreviews([])
@@ -334,6 +486,22 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       setNewImagePreviews(previews)
       console.log("Previsualizaciones generadas:", previews)
     }
+  }
+
+  const handleDayChange = (index: number) => {
+    setSelectedDays((prev) => {
+      const newSelectedDays = [...prev]
+      newSelectedDays[index] = !newSelectedDays[index]
+      return newSelectedDays
+    })
+  }
+
+  const handleDayScheduleChange = (index: number, field: "openingTime" | "closingTime", value: Date | null) => {
+    setDaySchedules((prev) => {
+      const newDaySchedules = [...prev]
+      newDaySchedules[index] = { ...newDaySchedules[index], [field]: value }
+      return newDaySchedules
+    })
   }
 
   const sliderSettings = {
@@ -369,7 +537,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       <Drawer
         anchor="right"
         open={open}
-        onClose={onClose}
+        onClose={handleDrawerClose}
         sx={{
           "& .MuiDrawer-paper": {
             width: { xs: "100%", sm: "400px", md: "450px" },
@@ -381,6 +549,10 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
           "& .MuiBackdrop-root": {
             backgroundColor: "rgba(0, 0, 0, 0)",
           },
+        }}
+        ModalProps={{
+          keepMounted: false, // Evita que se mantengan en el DOM cuando está cerrado
+          disableRestoreFocus: true, // Evita problemas con el foco
         }}
         className="info-punto-drawer"
       >
@@ -417,29 +589,37 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                   <>
                     {images.length > 0 ? (
                       <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: "text.secondary" }}>
+                        <Typography variant="subtitle1" component="div" sx={{ fontWeight: 500, mb: 1, color: "text.secondary" }}>
                           Imágenes existentes:
                         </Typography>
-                        <div className="carousel-container">
-                          {images.length > 1 && <div className="image-count">{`${images.length} imágenes`}</div>}
+                        <Box className="carousel-container">
+                          {images.length > 1 && (
+                            <Typography component="div" className="image-count">
+                              {`${images.length} imágenes`}
+                            </Typography>
+                          )}
                           <Slider {...sliderSettings}>
                             {images.map((url, index) => (
-                              <div key={url || `image-${index}`} className="carousel-image-container">
-                                <div className="carousel-image-wrapper">
+                              <Box key={url || `image-${index}`} className="carousel-image-container">
+                                <Box
+                                  className="carousel-image-wrapper"
+                                  tabIndex={-1} // Evita que sea enfocable
+                                >
                                   <img
                                     src={url || "/placeholder.svg"}
-                                    alt={`Imagen existente ${index + 1}`}
+                                    alt={`Imagen ${index + 1}`}
                                     className="carousel-image"
                                     onClick={() => {
                                       setSelectedImage(url)
                                       setOpenImageModal(true)
                                     }}
+                                    tabIndex={open ? 0 : -1} // Solo enfocable cuando el Drawer está abierto
                                   />
-                                </div>
-                              </div>
+                                </Box>
+                              </Box>
                             ))}
                           </Slider>
-                        </div>
+                        </Box>
                       </Box>
                     ) : (
                       <Box className="no-images-placeholder" sx={{ mt: 2 }}>
@@ -552,25 +732,82 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                         <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: "text.secondary" }}>
                           Horario:
                         </Typography>
-                        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-                          <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
-                            <TimePicker
-                              label="Hora de apertura"
-                              value={openingTime}
-                              onChange={(newValue) => setOpeningTime(newValue)}
-                              sx={{ flex: 1 }}
-                            />
-                            <TimePicker
-                              label="Hora de cierre"
-                              value={closingTime}
-                              onChange={(newValue) => setClosingTime(newValue)}
-                              sx={{ flex: 1 }}
-                            />
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ mb: 1 }}>
+                            Días de operación:
+                          </Typography>
+                          <Box className="days-checkbox-group">
+                            {daysOfWeek.map((day, index) => (
+                              <FormControlLabel
+                                key={day}
+                                control={
+                                  <Checkbox
+                                    checked={selectedDays[index]}
+                                    onChange={() => handleDayChange(index)}
+                                  />
+                                }
+                                label={day}
+                              />
+                            ))}
                           </Box>
-                        </LocalizationProvider>
-                        <Typography variant="caption" sx={{ display: "block", mt: 1, color: "text.secondary" }}>
-                          Horario resultante: {schedule}
-                        </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                          <Typography variant="body2" sx={{ mr: 2 }}>
+                            Usar horario uniforme
+                          </Typography>
+                          <Switch
+                            checked={useUniformSchedule}
+                            onChange={() => setUseUniformSchedule(!useUniformSchedule)}
+                          />
+                        </Box>
+                        {useUniformSchedule ? (
+                          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
+                            <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
+                              <TimePicker
+                                label="Hora de apertura"
+                                value={openingTime}
+                                onChange={(newValue) => setOpeningTime(newValue)}
+                                sx={{ flex: 1 }}
+                              />
+                              <TimePicker
+                                label="Hora de cierre"
+                                value={closingTime}
+                                onChange={(newValue) => setClosingTime(newValue)}
+                                sx={{ flex: 1 }}
+                              />
+                            </Box>
+                          </LocalizationProvider>
+                        ) : (
+                          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
+                            {daysOfWeek.map((day, index) =>
+                              selectedDays[index] ? (
+                                <Box key={day} sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: "8px" }}>
+                                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                    {day}
+                                  </Typography>
+                                  <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
+                                    <TimePicker
+                                      label="Hora de apertura"
+                                      value={daySchedules[index].openingTime}
+                                      onChange={(newValue) =>
+                                        handleDayScheduleChange(index, "openingTime", newValue)
+                                      }
+                                      sx={{ flex: 1 }}
+                                    />
+                                    <TimePicker
+                                      label="Hora de cierre"
+                                      value={daySchedules[index].closingTime}
+                                      onChange={(newValue) =>
+                                        handleDayScheduleChange(index, "closingTime", newValue)
+                                      }
+                                      sx={{ flex: 1 }}
+                                    />
+                                  </Box>
+                                </Box>
+                              ) : null
+                            )}
+                          </LocalizationProvider>
+                        )}
                       </Box>
                     )}
                     <TextField
@@ -663,9 +900,49 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                         <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: "text.secondary" }}>
                           Horario:
                         </Typography>
-                        <Typography variant="body1" sx={{ mb: 2 }}>
-                          {"schedule" in punto && punto.schedule ? punto.schedule : "No hay horario disponible."}
-                        </Typography>
+                        <Box sx={{ mb: 2 }}>
+                          {"schedule" in punto && punto.schedule ? (
+                            typeof punto.schedule === "object" && punto.schedule !== null ? (
+                              <Box component="ul" sx={{ pl: 2 }}>
+                                {daysOfWeek.map((day, index) => {
+                                  const dayKey = day.toLowerCase()
+                                  const daySchedule = (punto.schedule as any)[dayKey]
+                                  if (daySchedule?.enabled) {
+                                    return (
+                                      <Typography key={day} variant="body2" component="li">
+                                        {`${day}: ${daySchedule.time}`}
+                                      </Typography>
+                                    )
+                                  }
+                                  return null
+                                })}
+                              </Box>
+                            ) : typeof punto.schedule === "string" && punto.schedule.startsWith("{") ? (
+                              <Box component="ul" sx={{ pl: 2 }}>
+                                {daysOfWeek.map((day, index) => {
+                                  try {
+                                    const scheduleObj = JSON.parse(punto.schedule)
+                                    const dayKey = day.toLowerCase()
+                                    if (scheduleObj[dayKey]?.enabled) {
+                                      return (
+                                        <Typography key={day} variant="body2" component="li">
+                                          {`${day}: ${scheduleObj[dayKey].time}`}
+                                        </Typography>
+                                      )
+                                    }
+                                    return null
+                                  } catch {
+                                    return null
+                                  }
+                                })}
+                              </Box>
+                            ) : (
+                              <Typography variant="body1">{punto.schedule}</Typography>
+                            )
+                          ) : (
+                            <Typography variant="body1">No hay horario disponible.</Typography>
+                          )}
+                        </Box>
                       </>
                     )}
                     <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: "text.secondary" }}>

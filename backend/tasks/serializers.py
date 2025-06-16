@@ -38,24 +38,51 @@ class ReceptionQRSerializer(serializers.ModelSerializer):
         fields = ['id', 'latitude', 'longitude', 'name', 'description', 'campus', 'schedule', 'status', 'qr_image', 'effectiveStatus']
 
     def get_effectiveStatus(self, obj):
-        if not obj.schedule:
+        if not obj.schedule or not isinstance(obj.schedule, dict):
             return "No Operativo"
+        
         try:
-            match = re.match(r"(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})", obj.schedule)
+            # Mapear días de la semana (0=domingo, 1=lunes, ..., 6=sábado)
+            days = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"]
+            now = timezone.now()
+            current_day = days[now.weekday()]
+            current_minutes = now.hour * 60 + now.minute
+
+            day_schedule = obj.schedule.get(current_day, {"enabled": False, "time": ""})
+            if not day_schedule.get("enabled", False) or not day_schedule.get("time"):
+                return "No Operativo"
+
+            match = re.match(r"(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})", day_schedule["time"])
             if not match:
                 return "No Operativo"
+
             open_time, close_time = match.groups()
             open_hours, open_minutes = map(int, open_time.split(":"))
             close_hours, close_minutes = map(int, close_time.split(":"))
-            now = timezone.now()
-            current_minutes = now.hour * 60 + now.minute
             open_minutes_total = open_hours * 60 + open_minutes
             close_minutes_total = close_hours * 60 + close_minutes
+
             if close_minutes_total < open_minutes_total:
                 return current_minutes >= open_minutes_total or current_minutes <= close_minutes_total
             return current_minutes >= open_minutes_total and current_minutes <= close_minutes_total
-        except Exception:
+        except Exception as e:
+            print(f"Error processing schedule: {e}")
             return "No Operativo"
+
+    def validate_schedule(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("El horario debe ser un objeto JSON.")
+        
+        valid_days = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+        for day in value:
+            if day not in valid_days:
+                raise serializers.ValidationError(f"Día inválido: {day}")
+            if not isinstance(value[day], dict) or "enabled" not in value[day] or "time" not in value[day]:
+                raise serializers.ValidationError(f"Formato inválido para el día {day}")
+            if value[day]["enabled"] and value[day]["time"]:
+                if not re.match(r"^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$", value[day]["time"]):
+                    raise serializers.ValidationError(f"Horario inválido para {day}: {value[day]['time']}")
+        return value
 
 class DenunciaSerializer(serializers.ModelSerializer):
     class Meta:

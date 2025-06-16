@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { Path, ReceptionQR, TotemQR } from '../../../types/types';
 import SetView from '../MapaUtils/SetView';
@@ -88,11 +88,15 @@ const createLabelIcon = (icon: L.Icon, name: string) => {
     });
 };
 
-const MapUpdater: React.FC<{ initialPoint: TotemQR | ReceptionQR | null; infoPuntoOpen: boolean }> = ({ initialPoint, infoPuntoOpen }) => {
+const MapUpdater: React.FC<{ initialPoint: TotemQR | ReceptionQR | null; infoPuntoOpen: boolean }> = ({
+    initialPoint,
+    infoPuntoOpen
+}) => {
     const map = useMap();
     const [hasSetInitialView, setHasSetInitialView] = useState(false);
     const [mapState, setMapState] = useState<{ center: [number, number]; zoom: number } | null>(null);
     const [userInteracted, setUserInteracted] = useState(false);
+    const prevInfoPuntoOpen = useRef(infoPuntoOpen);
 
     // Detect user interaction (zoom or pan)
     useMapEvents({
@@ -104,7 +108,6 @@ const MapUpdater: React.FC<{ initialPoint: TotemQR | ReceptionQR | null; infoPun
     useEffect(() => {
         if (initialPoint && !hasSetInitialView && !userInteracted) {
             const { latitude, longitude } = initialPoint;
-            console.log('Setting initial view:', { latitude, longitude, zoom: 20 });
             map.setView([latitude, longitude], 20);
             setHasSetInitialView(true);
         }
@@ -112,26 +115,27 @@ const MapUpdater: React.FC<{ initialPoint: TotemQR | ReceptionQR | null; infoPun
 
     // Handle InfoPunto open/close
     useEffect(() => {
-        if (infoPuntoOpen) {
-            setMapState({
-                center: [map.getCenter().lat, map.getCenter().lng],
-                zoom: map.getZoom(),
-            });
-        } else {
-            setMapState(null);
+        if (infoPuntoOpen !== prevInfoPuntoOpen.current) {
+            if (infoPuntoOpen) {
+                setMapState({
+                    center: [map.getCenter().lat, map.getCenter().lng],
+                    zoom: map.getZoom(),
+                });
+            }
+
+            // Only invalidate size when actually needed
+            const timer = setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+
+            prevInfoPuntoOpen.current = infoPuntoOpen;
+            return () => clearTimeout(timer);
         }
-        // Debounce invalidateSize to prevent rapid calls
-        const timer = setTimeout(() => {
-            console.log('Invalidating size, infoPuntoOpen:', infoPuntoOpen);
-            map.invalidateSize();
-        }, 100);
-        return () => clearTimeout(timer);
     }, [infoPuntoOpen, map]);
 
-    // Restore map state when InfoPunto is open
+    // Restore map state when InfoPunto is closed
     useEffect(() => {
-        if (infoPuntoOpen && mapState && !userInteracted) {
-            console.log('Restoring map state:', mapState);
+        if (!infoPuntoOpen && mapState && !userInteracted) {
             map.setView(mapState.center, mapState.zoom);
         }
     }, [infoPuntoOpen, mapState, map, userInteracted]);

@@ -3,6 +3,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.db.models import JSONField
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -43,7 +44,7 @@ class ReceptionQR(models.Model):
     name = models.CharField(max_length=255, default='Recepción QR')
     description = models.TextField(blank=True, null=True)
     campus = models.CharField(max_length=255, blank=True, null=True)
-    schedule = models.CharField(max_length=100, blank=True)
+    schedule = JSONField(default=dict, blank=True, null=True)  # Cambiado a JSONField
     status = models.CharField(max_length=20, choices=[('Operativo', 'Operativo'), ('No Operativo', 'No Operativo')], default='Operativo')
     qr_image = models.URLField(max_length=500, blank=True, null=True)  # Nuevo campo para la URL del QR
 

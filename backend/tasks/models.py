@@ -33,7 +33,10 @@ class TotemQR(models.Model):
     campus = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=[('Operativo', 'Operativo'), ('No Operativo', 'No Operativo')], default='Operativo')
     qr_image = models.URLField(max_length=500, blank=True, null=True)  # Nuevo campo para la URL del QR
+    qr_generated_at = models.DateTimeField(null=True, blank=True)
 
+    def has_qr(self):
+        return bool(self.qr_image) and bool(self.qr_generated_at)
     def __str__(self):
         return self.name
 

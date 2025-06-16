@@ -1,8 +1,10 @@
-import CloseIcon from "@mui/icons-material/Close"
+import CloseIcon from "@mui/icons-material/Close";
+import QrCodeIcon from "@mui/icons-material/QrCode";
 import {
   Box,
   Button,
   Checkbox,
+  CircularProgress,
   Dialog,
   Drawer,
   FormControlLabel,
@@ -11,19 +13,19 @@ import {
   Switch,
   TextField,
   Typography,
-} from "@mui/material"
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
-import { TimePicker } from "@mui/x-date-pickers/TimePicker"
-import { es } from "date-fns/locale"
-import type React from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import Slider from "react-slick"
-import "slick-carousel/slick/slick-theme.css"
-import "slick-carousel/slick/slick.css"
-import axiosInstance from "../../../services/axiosInstance"
-import type { ReceptionQR, TotemQR } from "../../../types/types"
-import "./InfoPunto.css"
+} from "@mui/material";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { es } from "date-fns/locale";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
+import axiosInstance from "../../../services/axiosInstance";
+import type { ReceptionQR, TotemQR } from "../../../types/types";
+import "./InfoPunto.css";
 
 // Define LazyLoadTypes explicitly to avoid type mismatch
 type LazyLoadTypes = "ondemand" | "progressive" | "anticipated"
@@ -67,6 +69,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const [selectedDays, setSelectedDays] = useState<boolean[]>([true, true, true, true, true, false, false])
   const [useUniformSchedule, setUseUniformSchedule] = useState(true)
   const [daySchedules, setDaySchedules] = useState<DaySchedule[]>(Array(7).fill({ openingTime: null, closingTime: null }))
+  const [qrGenerated, setQrGenerated] = useState<boolean>(false);
 
   const daysOfWeek = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
   const isTotem = !!punto && !("schedule" in punto)
@@ -177,46 +180,47 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
 
   useEffect(() => {
     if (punto && open) {
-      setName(punto.name)
-      setDescription(punto.description || "")
-      const scheduleData = "schedule" in punto ? (punto as ReceptionQR).schedule : null
+      setName(punto.name);
+      setDescription(punto.description || '');
+      const scheduleData = 'schedule' in punto ? (punto as ReceptionQR).schedule : null;
       if (scheduleData) {
-        if (typeof scheduleData === "object" && scheduleData !== null) {
-          setSchedule(scheduleData as any)
-          const { opening, closing } = parseSchedule(JSON.stringify(scheduleData)) // Convertir a cadena para parseSchedule
-        } else if (typeof scheduleData === "string" && scheduleData) {
+        if (typeof scheduleData === 'object' && scheduleData !== null) {
+          setSchedule(scheduleData as any);
+          const { opening, closing } = parseSchedule(JSON.stringify(scheduleData));
+        } else if (typeof scheduleData === 'string' && scheduleData) {
           try {
-            const parsed = JSON.parse(scheduleData)
-            setSchedule(parsed)
-            const { opening, closing } = parseSchedule(scheduleData)
-            setOpeningTime(opening)
-            setClosingTime(closing)
+            const parsed = JSON.parse(scheduleData);
+            setSchedule(parsed);
+            const { opening, closing } = parseSchedule(scheduleData);
+            setOpeningTime(opening);
+            setClosingTime(closing);
           } catch {
-            setSchedule(null)
-            setOpeningTime(null)
-            setClosingTime(null)
+            setSchedule(null);
+            setOpeningTime(null);
+            setClosingTime(null);
           }
         } else {
-          setSchedule(null)
-          setOpeningTime(null)
-          setClosingTime(null)
+          setSchedule(null);
+          setOpeningTime(null);
+          setClosingTime(null);
         }
       } else {
-        setSchedule(null)
-        setOpeningTime(null)
-        setClosingTime(null)
-        setSelectedDays([true, true, true, true, true, false, false])
-        setDaySchedules(Array(7).fill({ openingTime: null, closingTime: null }))
-        setUseUniformSchedule(true)
+        setSchedule(null);
+        setOpeningTime(null);
+        setClosingTime(null);
+        setSelectedDays([true, true, true, true, true, false, false]);
+        setDaySchedules(Array(7).fill({ openingTime: null, closingTime: null }));
+        setUseUniformSchedule(true);
       }
-      setStatus(punto.status || "Operativo")
-      updateEffectiveStatus()
-      setQrImage(punto.qr_image || null)
-      setErrors({})
-      setIsEditing(false)
-      fetchImages()
+      setStatus(punto.status || 'Operativo');
+      updateEffectiveStatus();
+      setQrImage(punto.qr_image || null);
+      setQrGenerated(punto.qr_image && punto.qr_image.trim() !== '' ? true : false);
+      setErrors({});
+      setIsEditing(false);
+      fetchImages();
     }
-  }, [punto, open])
+  }, [punto, open]);
 
   useEffect(() => {
     if (!open) {
@@ -345,39 +349,59 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   }
 
   const handleGenerateQr = async () => {
-    if (!punto) return
-    setLoadingQr(true)
-    setQrError(null)
+    if (!punto || qrGenerated) return;
+    setLoadingQr(true);
+    setQrError(null);
+
     try {
-      const endpoint = isTotem ? "totems" : "recepciones"
+      const endpoint = isTotem ? "totems" : "recepciones";
       const response = await axiosInstance.post(
         `${endpoint}/${punto.id}/generate_qr/`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         }
-      )
-      setQrImage(response.data.qr_image)
-    } catch (err: any) {
-      setQrError("No se pudo generar el código QR.")
-    } finally {
-      setLoadingQr(false)
-    }
-  }
+      );
 
-  const handleDrawerClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
-    // Puedes agregar lógica específica para el backdrop click aquí si es necesario
-    onClose();
+      setQrGenerated(true);
+      const qrUrl = response.data.qr_image;
+
+      // Fetch the image as a blob
+      const imageResponse = await axiosInstance.get(qrUrl, {
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+      });
+
+      // Create a blob URL
+      const blob = new Blob([imageResponse.data], { type: 'image/png' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `qr_${isTotem ? 'totem' : 'reception'}_${punto.id}_${punto.campus || 'unknown'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+
+    } catch (err: any) {
+      console.error("Error generating QR:", err);
+      setQrError("No se pudo generar el código QR");
+    } finally {
+      setLoadingQr(false);
+    }
   };
 
-  const handleDownloadQr = () => {
-    if (qrImage && punto) {
-      const link = document.createElement("a")
-      link.href = qrImage
-      link.download = `qr_${pointType}_${punto.id}.png`
-      link.click()
+  useEffect(() => {
+    if (punto?.qr_image && punto.qr_image.trim() !== '') {
+      setQrGenerated(true);
+    } else {
+      setQrGenerated(false);
     }
-  }
+  }, [punto]);
 
   const handleSave = async () => {
     if (!punto || !validate()) return
@@ -537,7 +561,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       <Drawer
         anchor="right"
         open={open}
-        onClose={handleDrawerClose}
+        onClose={onClose}
         sx={{
           "& .MuiDrawer-paper": {
             width: { xs: "100%", sm: "400px", md: "450px" },
@@ -664,48 +688,60 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                       onChange={handleFileChange}
                       style={{ marginTop: "16px", marginBottom: "16px" }}
                     />
-                    {isEditable && (
+                    {isEditable && !qrGenerated && (
                       <Box className="qr-container" sx={{ mt: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: "text.secondary" }}>
                           Código QR
                         </Typography>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                          Este {isTotem ? 'tótem' : 'espacio seguro'} aún no tiene un código QR.
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={handleGenerateQr}
+                          disabled={loadingQr}
+                          sx={{ borderRadius: "8px", textTransform: "none" }}
+                          startIcon={loadingQr ? <CircularProgress size={20} /> : <QrCodeIcon />}
+                        >
+                          {loadingQr ? "Generando..." : "Generar QR"}
+                        </Button>
                         {qrError && (
-                          <Typography color="error" sx={{ mb: 1 }}>
+                          <Typography color="error" sx={{ mt: 1 }}>
                             {qrError}
                           </Typography>
                         )}
-                        {qrImage ? (
-                          <Box className="qr-image-container">
-                            <img
-                              src={qrImage || "/placeholder.svg"}
-                              alt={`Código QR para ${punto.name}`}
-                              className="qr-image"
-                              onClick={() => {
-                                setSelectedImage(qrImage)
-                                setOpenImageModal(true)
-                              }}
-                            />
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              onClick={handleDownloadQr}
-                              disabled={loadingQr}
-                              sx={{ mt: 1, borderRadius: "8px", textTransform: "none" }}
-                            >
-                              Descargar QR
-                            </Button>
-                          </Box>
-                        ) : (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleGenerateQr}
-                            disabled={loadingQr}
-                            sx={{ borderRadius: "8px", textTransform: "none" }}
-                          >
-                            Generar QR
-                          </Button>
-                        )}
+                      </Box>
+                    )}
+                    {qrGenerated && punto?.qr_image && punto.qr_image.trim() !== '' && (
+                      <Box sx={{ mt: 2, textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">
+                          El QR para este {isTotem ? 'tótem' : 'espacio seguro'} ya fue generado
+                        </Typography>
+                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                          URL: {punto.qr_image}
+                        </Typography>
+                      </Box>
+                    )}
+                    {qrGenerated && punto?.qr_image && punto.qr_image.trim() !== '' && (
+                      <Box sx={{ mt: 2, textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">
+                          El QR para este {isTotem ? 'tótem' : 'espacio seguro'} ya fue generado
+                        </Typography>
+                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                          URL: {punto.qr_image}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {qrGenerated && (
+                      <Box sx={{ mt: 2, textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">
+                          El QR para este {isTotem ? 'tótem' : 'espacio seguro'} ya fue generado
+                        </Typography>
+                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                          {punto?.qr_image ? `URL: ${punto.qr_image}` : 'No disponible para descarga'}
+                        </Typography>
                       </Box>
                     )}
                     <TextField
@@ -872,14 +908,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                               setOpenImageModal(true)
                             }}
                           />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleDownloadQr}
-                            sx={{ mt: 1, borderRadius: "8px", textTransform: "none" }}
-                          >
-                            Descargar QR
-                          </Button>
                         </Box>
                       </Box>
                     )}
@@ -904,7 +932,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                           {"schedule" in punto && punto.schedule ? (
                             typeof punto.schedule === "object" && punto.schedule !== null ? (
                               <Box component="ul" sx={{ pl: 2 }}>
-                                {daysOfWeek.map((day, index) => {
+                                {daysOfWeek.map((day) => {
                                   const dayKey = day.toLowerCase()
                                   const daySchedule = (punto.schedule as any)[dayKey]
                                   if (daySchedule?.enabled) {
@@ -919,7 +947,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                               </Box>
                             ) : typeof punto.schedule === "string" && punto.schedule.startsWith("{") ? (
                               <Box component="ul" sx={{ pl: 2 }}>
-                                {daysOfWeek.map((day, index) => {
+                                {daysOfWeek.map((day) => {
                                   try {
                                     const scheduleObj = JSON.parse(punto.schedule)
                                     const dayKey = day.toLowerCase()

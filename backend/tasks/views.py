@@ -173,11 +173,17 @@ class TotemQRViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
     def generate_qr(self, request, pk=None):
         totem = self.get_object()
+        
+        if totem.qr_image:
+            return Response(
+                {'detail': 'Este tótem ya tiene un código QR generado'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not request.user.is_authenticated or request.user.userprofile.role not in ['admin', 'superuser']:
             return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Generar URL para el QR
-        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{reception.campus}?pointId={reception.id}&pointType=reception"# Crear el QR
+        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"# Crear el QR
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -233,11 +239,16 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
     def generate_qr(self, request, pk=None):
         reception = self.get_object()
+        if reception.qr_image:
+            return Response(
+                {'detail': 'Este espacio seguro ya tiene un código QR generado'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not request.user.is_authenticated or request.user.userprofile.role not in ['admin', 'superuser']:
             return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Generar URL para el QR
-        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{reception.campus}?pointId={reception.id}&pointType=totem"# Crear el QR
+        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{reception.campus}?pointId={reception.id}&pointType=reception"
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,

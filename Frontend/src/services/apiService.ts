@@ -155,7 +155,7 @@ export const deletePath = async (pathId: number) => {
   await axiosInstance.delete(`caminos/${pathId}/`);
 };
 export const uploadImage = async (formData: FormData): Promise<{ image: string }> => {
-  const response = await api.post('image-upload/', formData, {
+  const response = await api.post('upload/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -211,7 +211,7 @@ export const uploadImages = async (files: File[], pointId: number, pointType: st
     formData.append('point_id', pointId.toString());
     formData.append('point_type', pointType);
     formData.append('campus', campus);
-    const response = await axiosInstance.post('image-upload/', formData, {
+    const response = await axiosInstance.post('upload/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     newImageUrls.push(response.data.image);

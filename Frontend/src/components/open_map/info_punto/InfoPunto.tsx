@@ -1,4 +1,5 @@
 import CloseIcon from "@mui/icons-material/Close";
+import DownloadIcon from "@mui/icons-material/Download";
 import QrCodeIcon from "@mui/icons-material/QrCode";
 import {
   Box,
@@ -27,10 +28,8 @@ import axiosInstance from "../../../services/axiosInstance";
 import type { ReceptionQR, TotemQR } from "../../../types/types";
 import "./InfoPunto.css";
 
-// Define LazyLoadTypes explicitly to avoid type mismatch
 type LazyLoadTypes = "ondemand" | "progressive" | "anticipated"
 
-// Define day schedule type
 interface DaySchedule {
   openingTime: Date | null
   closingTime: Date | null
@@ -62,7 +61,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const [qrImage, setQrImage] = useState<string | null>(null)
   const [loadingQr, setLoadingQr] = useState(false)
   const [qrError, setQrError] = useState<string | null>(null)
-  const [isScrollable, setIsScrollable] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const [openingTime, setOpeningTime] = useState<Date | null>(null)
   const [closingTime, setClosingTime] = useState<Date | null>(null)
@@ -186,7 +184,6 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       if (scheduleData) {
         if (typeof scheduleData === 'object' && scheduleData !== null) {
           setSchedule(scheduleData as any);
-          const { opening, closing } = parseSchedule(JSON.stringify(scheduleData));
         } else if (typeof scheduleData === 'string' && scheduleData) {
           try {
             const parsed = JSON.parse(scheduleData);
@@ -224,31 +221,17 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
 
   useEffect(() => {
     if (!open) {
-      // Limpia el foco cuando se cierra el Drawer
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
     }
   }, [open]);
 
-
   useEffect(() => {
     updateEffectiveStatus()
     const interval = setInterval(updateEffectiveStatus, 60 * 1000)
     return () => clearInterval(interval)
   }, [punto, isEditing, selectedDays])
-
-  useEffect(() => {
-    const checkScrollable = () => {
-      if (contentRef.current) {
-        const { scrollHeight, clientHeight } = contentRef.current
-        setIsScrollable(scrollHeight > clientHeight)
-      }
-    }
-    checkScrollable()
-    window.addEventListener("resize", checkScrollable)
-    return () => window.removeEventListener("resize", checkScrollable)
-  }, [isEditing, images, newImagePreviews, qrImage])
 
   useEffect(() => {
     if (punto && open && typeof punto.id === "number") {
@@ -322,7 +305,9 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       }
 
       const response = await axiosInstance.get("/images/", config)
-      const fetchedImages = response.data.map((img: any) => img.image)
+      const fetchedImages = response.data
+        .map((img: any) => img.image)
+        .filter((url: string) => !url.includes('/media/qr_codes/') && !url.includes('qr_totem_') && !url.includes('qr_reception_'));
       const validImages = []
       for (const imgUrl of fetchedImages) {
         const isValid = await checkImageUrl(imgUrl)
@@ -395,6 +380,36 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     }
   };
 
+  const handleDownloadQr = async () => {
+    if (!punto || !punto.qr_image) return;
+
+    try {
+      // Fetch the existing QR image as a blob
+      const imageResponse = await axiosInstance.get(punto.qr_image, {
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+      });
+
+      // Create a blob URL
+      const blob = new Blob([imageResponse.data], { type: 'image/png' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `qr_${isTotem ? 'totem' : 'reception'}_${punto.id}_${punto.campus || 'unknown'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (err: any) {
+      console.error("Error downloading QR:", err);
+      setQrError("No se pudo descargar el código QR");
+    }
+  };
+
   useEffect(() => {
     if (punto?.qr_image && punto.qr_image.trim() !== '') {
       setQrGenerated(true);
@@ -430,13 +445,14 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
         formData.append("point_id", punto.id.toString())
         formData.append("point_type", isTotem ? "totem" : "reception")
         formData.append("campus", punto.campus || "")
-
-        await axiosInstance.post("/images/", formData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-            "Content-Type": "multipart/form-data",
-          },
+        console.log("Enviando FormData para subir imagen:", {
+          point_id: punto.id.toString(),
+          point_type: isTotem ? "totem" : "reception",
+          campus: punto.campus || "",
+          files: files.map(f => f.name),
         })
+
+        await axiosInstance.post("/upload/", formData)
       }
 
       onSave(response.data)
@@ -575,8 +591,8 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
           },
         }}
         ModalProps={{
-          keepMounted: false, // Evita que se mantengan en el DOM cuando está cerrado
-          disableRestoreFocus: true, // Evita problemas con el foco
+          keepMounted: false,
+          disableRestoreFocus: true,
         }}
         className="info-punto-drawer"
       >
@@ -627,7 +643,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                               <Box key={url || `image-${index}`} className="carousel-image-container">
                                 <Box
                                   className="carousel-image-wrapper"
-                                  tabIndex={-1} // Evita que sea enfocable
+                                  tabIndex={-1}
                                 >
                                   <img
                                     src={url || "/placeholder.svg"}
@@ -637,7 +653,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                                       setSelectedImage(url)
                                       setOpenImageModal(true)
                                     }}
-                                    tabIndex={open ? 0 : -1} // Solo enfocable cuando el Drawer está abierto
+                                    tabIndex={open ? 0 : -1}
                                   />
                                 </Box>
                               </Box>
@@ -713,35 +729,28 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                         )}
                       </Box>
                     )}
-                    {qrGenerated && punto?.qr_image && punto.qr_image.trim() !== '' && (
-                      <Box sx={{ mt: 2, textAlign: 'center' }}>
-                        <Typography variant="body2" color="textSecondary">
-                          El QR para este {isTotem ? 'tótem' : 'espacio seguro'} ya fue generado
-                        </Typography>
-                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                          URL: {punto.qr_image}
-                        </Typography>
-                      </Box>
-                    )}
-                    {qrGenerated && punto?.qr_image && punto.qr_image.trim() !== '' && (
-                      <Box sx={{ mt: 2, textAlign: 'center' }}>
-                        <Typography variant="body2" color="textSecondary">
-                          El QR para este {isTotem ? 'tótem' : 'espacio seguro'} ya fue generado
-                        </Typography>
-                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                          URL: {punto.qr_image}
-                        </Typography>
-                      </Box>
-                    )}
-
                     {qrGenerated && (
-                      <Box sx={{ mt: 2, textAlign: 'center' }}>
+                      <Box className="qr-container" sx={{ mt: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: "text.secondary" }}>
+                          Código QR
+                        </Typography>
                         <Typography variant="body2" color="textSecondary">
                           El QR para este {isTotem ? 'tótem' : 'espacio seguro'} ya fue generado
                         </Typography>
-                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                        <Typography variant="caption" display="block" sx={{ mt: 1, mb: 2 }}>
                           {punto?.qr_image ? `URL: ${punto.qr_image}` : 'No disponible para descarga'}
                         </Typography>
+                        {punto?.qr_image && (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleDownloadQr}
+                            sx={{ borderRadius: "8px", textTransform: "none" }}
+                            startIcon={<DownloadIcon />}
+                          >
+                            Descargar QR
+                          </Button>
+                        )}
                       </Box>
                     )}
                     <TextField
@@ -909,6 +918,20 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
                             }}
                           />
                         </Box>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={handleDownloadQr}
+                          sx={{ mt: 2, borderRadius: "8px", textTransform: "none" }}
+                          startIcon={<DownloadIcon />}
+                        >
+                          Descargar QR
+                        </Button>
+                        {qrError && (
+                          <Typography color="error" sx={{ mt: 1 }}>
+                            {qrError}
+                          </Typography>
+                        )}
                       </Box>
                     )}
                     <Typography variant="subtitle1" sx={{ fontWeight: 500, mt: 4, mb: 0.5, color: "text.secondary" }}>

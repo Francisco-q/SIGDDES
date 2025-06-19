@@ -16,6 +16,7 @@ import requests
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
+import os
 
 def home(request):
     return HttpResponse("Bienvenido al backend de mapas QR")
@@ -32,21 +33,17 @@ class TotemQRViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_permissions(self):
-        # Restrict POST, PUT, DELETE to authenticated users with appropriate roles
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'generate_qr']:
             return [RoleBasedPermission()]
-        return [AllowAny()]  # Allow GET and nearest_path for all
+        return [AllowAny()]
 
     def calculate_distance(self, p1_lat, p1_lon, p2_lat, p2_lon):
-        """Calcula la distancia euclidiana entre dos puntos."""
         return math.sqrt((p1_lat - p2_lat) ** 2 + (p1_lon - p2_lon) ** 2)
 
     def build_graph(self, campus):
-        """Construye un grafo con los caminos reales del campus."""
         G = nx.Graph()
         paths = Path.objects.filter(campus=campus).prefetch_related('points')
         
-        # Añadir nodos y aristas desde los caminos
         for path in paths:
             points = path.points.order_by('order')
             for i in range(len(points) - 1):
@@ -58,7 +55,6 @@ class TotemQRViewSet(viewsets.ModelViewSet):
                     weight=self.calculate_distance(p1.latitude, p1.longitude, p2.latitude, p2.longitude)
                 )
         
-        # Añadir tótems y recepciones como nodos y conectarlos a los caminos cercanos
         totems = TotemQR.objects.filter(campus=campus)
         receptions = ReceptionQR.objects.filter(campus=campus)
         all_points = list(points.values_list('latitude', 'longitude', flat=False))
@@ -70,7 +66,7 @@ class TotemQRViewSet(viewsets.ModelViewSet):
                     G.add_edge(
                         (totem.latitude, totem.longitude),
                         point,
-                        weight=0  # Conexión directa si están en el mismo punto
+                        weight=0
                     )
 
         for reception in receptions:
@@ -84,6 +80,56 @@ class TotemQRViewSet(viewsets.ModelViewSet):
                     )
 
         return G
+
+    @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
+    def generate_qr(self, request, pk=None):
+        totem = self.get_object()
+        
+        if totem.qr_image:
+            return Response(
+                {'detail': 'Este tótem ya tiene un código QR generado'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not request.user.is_authenticated or request.user.userprofile.role not in ['admin', 'superuser']:
+            return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
+
+        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        file_name = f"qr_totem_{totem.id}_{totem.campus}.png"
+        file_path = f"qr_codes/{file_name}"  # Save to media/qr_codes/
+        file_content = ContentFile(buffer.getvalue(), name=file_name)
+
+        default_storage.save(file_path, file_content)
+        qr_image_url = request.build_absolute_uri(default_storage.url(file_path))
+
+        image_upload = ImageUpload.objects.create(
+            point_id=totem.id,
+            point_type='totem',
+            campus=totem.campus,
+            image=file_path,
+            uploaded_by=request.user
+        )
+
+        totem.qr_image = qr_image_url
+        totem.save()
+
+        serializer = ImageUploadSerializer(image_upload, context={'request': request})
+        return Response({
+            'qr_image': totem.qr_image,
+            'image_upload': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
     @action(detail=True, methods=['get'])
     def nearest_path(self, request, pk=None):
         totem = self.get_object()
@@ -111,7 +157,6 @@ class TotemQRViewSet(viewsets.ModelViewSet):
         if not shortest_path:
             return Response({"error": "No se encontró un camino a ninguna recepción"}, status=404)
 
-        # Modificar para incluir el campo 'order'
         path_points = [{"latitude": lat, "longitude": lon, "order": idx} for idx, (lat, lon) in enumerate(shortest_path)]
         path_data = {
             "name": f"Camino desde {totem.name} a la recepción más cercana",
@@ -123,101 +168,8 @@ class TotemQRViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             return Response(serializer.data)
         else:
-            print("Errores de serialización:", serializer.errors)  # Para depuración
+            print("Errores de serialización:", serializer.errors)
             return Response(serializer.errors, status=400)
-        # Obtener el tótem solicitado
-        totem = self.get_object()
-        
-        # Construir el grafo (asegúrate de que build_graph esté implementado)
-        G = self.build_graph(totem.campus)
-        
-        # Obtener recepciones en el mismo campus
-        receptions = ReceptionQR.objects.filter(campus=totem.campus)
-        if not receptions:
-            return Response({"error": "No hay recepciones en este campus"}, status=404)
-
-        # Calcular el camino más corto
-        shortest_path = None
-        min_distance = float('inf')
-        totem_coords = (totem.latitude, totem.longitude)
-
-        for reception in receptions:
-            reception_coords = (reception.latitude, reception.longitude)
-            try:
-                path = nx.shortest_path(G, totem_coords, reception_coords, weight='weight')
-                distance = nx.shortest_path_length(G, totem_coords, reception_coords, weight='weight')
-                if distance < min_distance:
-                    min_distance = distance
-                    shortest_path = path
-            except nx.NetworkXNoPath:
-                continue
-
-        # Verificar si se encontró un camino
-        if not shortest_path:
-            return Response({"error": "No se encontró un camino a ninguna recepción"}, status=404)
-
-        # Estructurar los datos del camino
-        path_points = [{"latitude": lat, "longitude": lon} for lat, lon in shortest_path]
-        path_data = {
-            "name": f"Camino desde {totem.name} a la recepción más cercana",
-            "points": path_points,
-            "campus": totem.campus
-        }
-
-        # Serializar los datos
-        serializer = PathSerializer(data=path_data)
-        if serializer.is_valid():
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors, status=400)
-    @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
-    def generate_qr(self, request, pk=None):
-        totem = self.get_object()
-        
-        if totem.qr_image:
-            return Response(
-                {'detail': 'Este tótem ya tiene un código QR generado'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if not request.user.is_authenticated or request.user.userprofile.role not in ['admin', 'superuser']:
-            return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
-
-        # Generar URL para el QR
-        qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{totem.campus}?pointId={totem.id}&pointType=totem"# Crear el QR
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(qr_url)
-        qr.make(fit=True)
-        
-        # Convertir a imagen
-        img = qr.make_image(fill_color="black", back_color="white")
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        file_name = f"qr_totem_{totem.id}_{totem.campus}.png"
-        file_content = ContentFile(buffer.getvalue(), name=file_name)
-
-        # Guardar en ImageUpload
-        image_upload = ImageUpload.objects.create(
-            point_id=totem.id,
-            point_type='totem',
-            campus=totem.campus,
-            image=file_content,
-            uploaded_by=request.user
-        )
-
-        # Actualizar el campo qr_image
-        totem.qr_image = request.build_absolute_uri(default_storage.url(image_upload.image.name))
-        totem.save()
-
-        serializer = ImageUploadSerializer(image_upload, context={'request': request})
-        return Response({
-            'qr_image': totem.qr_image,
-            'image_upload': serializer.data
-        }, status=status.HTTP_201_CREATED)
 
 class ReceptionQRViewSet(viewsets.ModelViewSet):
     serializer_class = ReceptionQRSerializer
@@ -231,10 +183,9 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        # Restrict POST, PUT, DELETE to authenticated users with appropriate roles
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'generate_qr']:
             return [RoleBasedPermission()]
-        return [AllowAny()]  # Allow GET for all
+        return [AllowAny()]
 
     @action(detail=True, methods=['post'], permission_classes=[RoleBasedPermission])
     def generate_qr(self, request, pk=None):
@@ -247,7 +198,6 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
         if not request.user.is_authenticated or request.user.userprofile.role not in ['admin', 'superuser']:
             return Response({'detail': 'Solo administradores pueden generar QRs.'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Generar URL para el QR
         qr_url = f"{settings.FRONTEND_BASE_URL}/mapa2/{reception.campus}?pointId={reception.id}&pointType=reception"
         qr = qrcode.QRCode(
             version=1,
@@ -258,24 +208,25 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
         qr.add_data(qr_url)
         qr.make(fit=True)
         
-        # Convertir a imagen
         img = qr.make_image(fill_color="black", back_color="white")
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         file_name = f"qr_reception_{reception.id}_{reception.campus}.png"
+        file_path = f"qr_codes/{file_name}"  # Save to media/qr_codes/
         file_content = ContentFile(buffer.getvalue(), name=file_name)
 
-        # Guardar en ImageUpload
+        default_storage.save(file_path, file_content)
+        qr_image_url = request.build_absolute_uri(default_storage.url(file_path))
+
         image_upload = ImageUpload.objects.create(
             point_id=reception.id,
             point_type='reception',
             campus=reception.campus,
-            image=file_content,
+            image=file_path,
             uploaded_by=request.user
         )
 
-        # Actualizar el campo qr_image
-        reception.qr_image = request.build_absolute_uri(default_storage.url(image_upload.image.name))
+        reception.qr_image = qr_image_url
         reception.save()
 
         serializer = ImageUploadSerializer(image_upload, context={'request': request})
@@ -296,10 +247,9 @@ class PathViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        # Restrict POST, PUT, DELETE to authenticated users with appropriate roles
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [RoleBasedPermission()]
-        return [AllowAny()]  # Allow GET for all
+        return [AllowAny()]
 
 class UserProfileViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -358,14 +308,11 @@ class DenunciaViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         denuncia = serializer.save(usuario=self.request.user)
-        # Crear issue en Jira
         try:
             jira_response = self.create_jira_issue(serializer.validated_data)
             print(f"Issue de Jira creado: {jira_response}")
         except Exception as e:
             print(f"No se pudo crear el issue en Jira: {e}")
-            # Opcional: decidir si fallar la creación de la denuncia si Jira falla
-            # raise e
 
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
@@ -377,7 +324,6 @@ class DenunciaViewSet(viewsets.ModelViewSet):
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
-        # Formatear todos los campos en la descripción
         description_content = [
             {
                 "type": "paragraph",
@@ -490,21 +436,23 @@ class ImageUploadView(viewsets.ViewSet):
         if not file_obj:
             return Response({'detail': 'No se proporcionó un archivo.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        file_path = default_storage.save(f'images/points/{campus}/{point_id}_{file_obj.name}', file_obj)
-        full_url = request.build_absolute_uri(default_storage.url(file_path))
+        file_path = f'images/points/{campus}/{point_id}_{file_obj.name}'
+        # Guardar el archivo físicamente
+        from django.core.files.storage import default_storage
+        saved_path = default_storage.save(file_path, file_obj)
 
         image_upload = ImageUpload.objects.create(
             point_id=point_id,
             point_type=point_type,
             campus=campus,
-            image=file_path
+            image=saved_path
         )
 
         serializer = ImageUploadSerializer(image_upload, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class ImageListView(viewsets.ViewSet):
-    permission_classes = [AllowAny]  # Allow unauthenticated access for GET
+    permission_classes = [AllowAny]
 
     def list(self, request, *args, **kwargs):
         point_id = request.query_params.get('point_id')
@@ -523,14 +471,14 @@ class ImageListView(viewsets.ViewSet):
             return Response({'detail': 'ReceptionQR no encontrado o no pertenece a este campus.'}, status=status.HTTP_404_NOT_FOUND)
 
         images = ImageUpload.objects.filter(point_id=point_id, point_type=point_type, campus=campus)
+        images = [img for img in images if os.path.exists(os.path.join(settings.MEDIA_ROOT, img.image.name))]
         serializer = ImageUploadSerializer(images, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get_permissions(self):
-        # Restrict any future non-GET actions (e.g., POST, DELETE) to authenticated users
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated()]
-        return [AllowAny()]  # Allow GET for all
+        return [AllowAny()]
 
 class ReporteAtencionViewSet(viewsets.ModelViewSet):
     queryset = ReporteAtencion.objects.all()

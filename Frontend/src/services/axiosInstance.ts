@@ -8,13 +8,10 @@ if (!import.meta.env.VITE_API_BASE_URL) {
 
 const axiosInstance = axios.create({
     baseURL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
     timeout: 10000, // 10 segundos de timeout para evitar peticiones colgadas
 });
 
-// Interceptor para agregar el token a cada petición
+// Interceptor para agregar el token y log headers
 axiosInstance.interceptors.request.use(
     (config) => {
         console.log(`Enviando petición a: ${config.baseURL}${config.url}`);
@@ -24,6 +21,12 @@ axiosInstance.interceptors.request.use(
             console.log('Token agregado a la petición:', token.substring(0, 10) + '...');
         } else {
             console.warn('No se encontró access_token en localStorage');
+        }
+        // Log headers para depuración
+        console.log('Headers enviados:', config.headers);
+        // Evitar establecer Content-Type para FormData
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
         }
         return config;
     },

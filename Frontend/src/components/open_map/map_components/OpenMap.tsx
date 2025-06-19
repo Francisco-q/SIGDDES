@@ -45,9 +45,9 @@ const OpenMap: React.FC = () => {
   const [role, setRole] = useState<string | null>('guest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  // const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [, setFormErrors] = useState<Record<string, string>>({});
   const [initialPoint, setInitialPoint] = useState<TotemQR | ReceptionQR | null>(null);
   const [showPointNames, setShowPointNames] = useState(false);
 
@@ -157,7 +157,6 @@ const OpenMap: React.FC = () => {
     const validateToken = async () => {
       const accessToken = localStorage.getItem("access_token");
       if (!accessToken) {
-        setIsAuthenticated(false);
         setRole('guest');
         setLoading(false);
         return;
@@ -166,11 +165,9 @@ const OpenMap: React.FC = () => {
       try {
         const response = await axiosInstance.get("user/current_user/");
         setRole(response.data.role);
-        setIsAuthenticated(true);
         setError(null);
       } catch (error: any) {
         console.error("Error validating token:", error);
-        setIsAuthenticated(false);
         setRole('guest');
         setError(null);
       } finally {
@@ -203,7 +200,7 @@ const OpenMap: React.FC = () => {
   }, [campus]);
 
   useEffect(() => {
-    const { src, error } = getMapaSrc(campus);
+    const { error } = getMapaSrc(campus);
     if (error) {
       setSvgError(error);
     } else {

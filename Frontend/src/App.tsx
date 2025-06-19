@@ -6,9 +6,9 @@ import Login from './components/login/Login';
 import MapComponent from './components/open_map/map_components/OpenMap';
 import axiosInstance from './services/axiosInstance';
 
-const PrivateRoute: React.FC<{ role: string | null }> = ({ role }) => {
+const PrivateRoute: React.FC<{ role: string | null }> = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const validateToken = async () => {

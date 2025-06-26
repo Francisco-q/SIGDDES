@@ -484,3 +484,10 @@ class ReporteAtencionViewSet(viewsets.ModelViewSet):
     queryset = ReporteAtencion.objects.all()
     serializer_class = ReporteAtencionSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []  # Desactiva autenticación para todo el viewset
+
+    def get_permissions(self):
+        # Permitir acceso sin autenticación para crear reportes
+        if self.action == 'create':
+            return [AllowAny()]
+        return super().get_permissions()

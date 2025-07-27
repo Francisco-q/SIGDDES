@@ -231,20 +231,6 @@
     outline-offset: 2px;
 }
 
-/* Estilos para el modo oscuro */
-@media (prefers-color-scheme: dark) {
-    .status-badge {
-        background: rgba(31, 41, 55, 0.95);
-        color: #f9fafb;
-        border-color: rgba(75, 85, 99, 0.3);
-    }
-
-    .leaflet-control-zoom a {
-        background: rgba(31, 41, 55, 0.95) !important;
-        color: #f9fafb !important;
-    }
-}
-
 /* Efectos de transición suaves */
 .leaflet-fade-anim .leaflet-tile {
     transition: opacity 0.3s ease-in-out;

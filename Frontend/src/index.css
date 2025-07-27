@@ -2,11 +2,9 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgb(241, 230, 250);
-
-
+  color-scheme: light;
+  color: #213547;
+  background-color: rgb(238, 219, 255);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -31,11 +29,8 @@ body {
   padding: 0;
   flex-direction: column;
   justify-content: flex-start;
-  color: rgb(238, 219, 255);
-  /* Cambia el fondo a blanco */
   color: #000000;
   background-color: rgb(238, 219, 255);
-  /* Cambia el texto a negro */
 }
 
 h1 {
@@ -50,7 +45,8 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #f9f9f9;
+  color: #213547;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -62,19 +58,4 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: rgb(238, 219, 255);
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
 }

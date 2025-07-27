@@ -417,42 +417,6 @@
 }
 
 /* Soporte para modo oscuro */
-@media (prefers-color-scheme: dark) {
-    .openmap-container {
-        background-color: #1a1a1a;
-        color: #ffffff;
-    }
-
-    .openmap-form-container,
-    .openmap-report-container {
-        background-color: #2a2a2a;
-        color: #ffffff;
-    }
-
-    .openmap-report-section {
-        background-color: #1f1f1f;
-        border-color: #4a4a4a;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .openmap-report-header {
-        background: linear-gradient(135deg, #2a1a2a 0%, #1a1a1a 100%);
-        border-color: #4a3a4a;
-    }
-
-    .openmap-report-field .MuiOutlinedInput-root {
-        background-color: #3a3a3a;
-        color: #ffffff;
-    }
-
-    .openmap-report-checkbox-item {
-        background-color: #3a3a3a;
-        border-color: #4a4a4a;
-        color: #ffffff;
-    }
-}
-
-
 /* Ensure InfoPunto drawer overlays without affecting map */
 .info-punto-drawer .MuiDrawer-paper {
     z-index: 1100;

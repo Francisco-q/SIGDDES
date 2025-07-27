@@ -9,13 +9,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
 export const API_CONFIG = {
   BASE_URL: API_BASE_URL,
   ENDPOINTS: {
-    TOTEMS: '/api/totems/',
-    RECEPTIONS: '/api/receptions/',
-    PATHS: '/api/paths/',
-    DENUNCIAS: '/api/denuncias/',
-    REPORTES: '/api/reportes-atencion/',
-    AUTH: '/api/token/',
-    IMAGES: '/api/images/',
+    TOTEMS: 'totems/',
+    RECEPTIONS: 'recepciones/',
+    PATHS: 'caminos/',
+    DENUNCIAS: 'denuncias/',
+    REPORTES: 'reportes-atencion/',
+    AUTH: 'token/',
+    IMAGES: 'images/',
   },
   TIMEOUT: 10000,
 };

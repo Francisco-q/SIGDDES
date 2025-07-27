@@ -304,7 +304,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
         }
       }
 
-      const response = await axiosInstance.get("/images/", config)
+      const response = await axiosInstance.get("images/", config)
       const fetchedImages = response.data
         .map((img: any) => img.image)
         .filter((url: string) => !url.includes('/media/qr_codes/') && !url.includes('qr_totem_') && !url.includes('qr_reception_'));
@@ -452,7 +452,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
           files: files.map(f => f.name),
         })
 
-        await axiosInstance.post("/upload/", formData)
+        await axiosInstance.post("upload/", formData)
       }
 
       onSave(response.data)

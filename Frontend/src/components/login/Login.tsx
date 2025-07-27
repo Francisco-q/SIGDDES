@@ -5,6 +5,7 @@ import { Box, Button, InputAdornment, TextField, Typography } from "@mui/materia
 import type React from "react"
 import { useState } from "react"
 import axiosInstance from "../../services/axiosInstance"
+import API_CONFIG from "../../config/api"
 import "./Login.css"
 
 interface LoginProps {
@@ -24,7 +25,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError("")
 
         try {
-            const response = await axiosInstance.post("token/", {
+            const response = await axiosInstance.post(API_CONFIG.ENDPOINTS.AUTH, {
                 username,
                 password,
             });

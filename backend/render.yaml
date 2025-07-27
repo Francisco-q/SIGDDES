@@ -2,7 +2,7 @@ services:
   - type: web
     name: safevg-backend
     env: python
-    buildCommand: "./build.sh"
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
     startCommand: "gunicorn django_crud_api.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE

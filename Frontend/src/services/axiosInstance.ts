@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// Validar VITE_API_BASE_URL con un valor por defecto
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/';
+// Configurar baseURL según el entorno
+const isDevelopment = import.meta.env.DEV;
+const baseURL = import.meta.env.VITE_API_BASE_URL || (
+    isDevelopment 
+        ? 'http://localhost:8000/api/' 
+        : 'https://front-0opi.onrender.com/api/'
+);
+
 if (!import.meta.env.VITE_API_BASE_URL) {
     console.warn('VITE_API_BASE_URL no está definido en .env. Usando valor por defecto:', baseURL);
 }

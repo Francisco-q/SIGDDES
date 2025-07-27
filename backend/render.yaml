@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     region: oregon
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py create_superuser"
     startCommand: "gunicorn django_crud_api.wsgi:application --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
@@ -35,6 +35,13 @@ services:
         fromDatabase:
           name: safevg-postgres
           property: port
+      # Variables del superusuario - SE CONFIGURAN EN RENDER DASHBOARD
+      - key: SUPERUSER_USERNAME
+        sync: false  # Se configura manualmente en Render
+      - key: SUPERUSER_EMAIL
+        sync: false  # Se configura manualmente en Render  
+      - key: SUPERUSER_PASSWORD
+        sync: false  # Se configura manualmente en Render
 
 databases:
   - name: safevg-postgres

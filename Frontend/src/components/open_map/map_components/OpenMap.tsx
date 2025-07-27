@@ -45,9 +45,9 @@ const OpenMap: React.FC = () => {
   const [role, setRole] = useState<string | null>('guest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
-  const [, setFormErrors] = useState<Record<string, string>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [initialPoint, setInitialPoint] = useState<TotemQR | ReceptionQR | null>(null);
   const [showPointNames, setShowPointNames] = useState(false);
 
@@ -157,6 +157,7 @@ const OpenMap: React.FC = () => {
     const validateToken = async () => {
       const accessToken = localStorage.getItem("access_token");
       if (!accessToken) {
+        setIsAuthenticated(false);
         setRole('guest');
         setLoading(false);
         return;
@@ -165,9 +166,11 @@ const OpenMap: React.FC = () => {
       try {
         const response = await axiosInstance.get("user/current_user/");
         setRole(response.data.role);
+        setIsAuthenticated(true);
         setError(null);
       } catch (error: any) {
         console.error("Error validating token:", error);
+        setIsAuthenticated(false);
         setRole('guest');
         setError(null);
       } finally {
@@ -200,7 +203,7 @@ const OpenMap: React.FC = () => {
   }, [campus]);
 
   useEffect(() => {
-    const { error } = getMapaSrc(campus);
+    const { src, error } = getMapaSrc(campus);
     if (error) {
       setSvgError(error);
     } else {
@@ -682,9 +685,9 @@ const OpenMap: React.FC = () => {
       )}
 
       {tabValue === 2 && (
-        <Box className="openmap-report-container" sx={{ mt: { xs: 4, sm: 6 }, mb: { xs: 8, sm: 10 } }}>
+        <Box className="openmap-report-container">
           {!reportSubmitted ? (
-            <form className="openmap-report-form" onSubmit={handleReportSubmit}>
+            <Box className="openmap-report-form">
               <Box className="openmap-report-header">
                 <Typography className="openmap-report-title">Reporte de Falta de Atención</Typography>
                 <Typography className="openmap-report-subtitle">
@@ -693,147 +696,149 @@ const OpenMap: React.FC = () => {
                 </Typography>
               </Box>
 
-              <Box className="openmap-report-section">
-                <Typography className="openmap-report-section-title">
-                  <ReportIcon />
-                  Información de Contacto
-                </Typography>
+              <form onSubmit={handleReportSubmit}>
+                <Box className="openmap-report-section">
+                  <Typography className="openmap-report-section-title">
+                    <ReportIcon />
+                    Información de Contacto
+                  </Typography>
 
-                <Box className="openmap-report-field">
-                  <TextField
-                    label="Nombre Completo"
-                    value={reportData.nombre}
-                    onChange={(e) => handleReportInputChange("nombre", e.target.value)}
-                    fullWidth
-                    required
-                    placeholder="Ingrese su nombre completo"
-                  />
+                  <Box className="openmap-report-field">
+                    <TextField
+                      label="Nombre Completo"
+                      value={reportData.nombre}
+                      onChange={(e) => handleReportInputChange("nombre", e.target.value)}
+                      fullWidth
+                      required
+                      placeholder="Ingrese su nombre completo"
+                    />
+                  </Box>
+
+                  <Box className="openmap-report-field">
+                    <TextField
+                      label="Correo Electrónico"
+                      type="email"
+                      value={reportData.email}
+                      onChange={(e) => handleReportInputChange("email", e.target.value)}
+                      fullWidth
+                      required
+                      placeholder="ejemplo@correo.com"
+                    />
+                  </Box>
+
+                  <Box className="openmap-report-field">
+                    <TextField
+                      label="Teléfono (Opcional)"
+                      value={reportData.telefono}
+                      onChange={(e) => handleReportInputChange("telefono", e.target.value)}
+                      fullWidth
+                      placeholder="+56 9 1234 5678"
+                    />
+                  </Box>
                 </Box>
 
-                <Box className="openmap-report-field">
-                  <TextField
-                    label="Correo Electrónico"
-                    type="email"
-                    value={reportData.email}
-                    onChange={(e) => handleReportInputChange("email", e.target.value)}
-                    fullWidth
-                    required
-                    placeholder="ejemplo@correo.com"
-                  />
+                <Box className="openmap-report-section">
+                  <Typography className="openmap-report-section-title">Motivo de la Falta de Atención</Typography>
+                  <Typography variant="body2" sx={{ mb: 2, color: "#64748b" }}>
+                    Seleccione todos los motivos que apliquen a su situación:
+                  </Typography>
+
+                  <FormGroup className="openmap-report-checkbox-group">
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.noHabiaPersonal ? "checked" : ""}`}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={reportData.motivos.noHabiaPersonal}
+                            onChange={(e) => handleReportCheckboxChange("noHabiaPersonal", e.target.checked)}
+                          />
+                        }
+                        label="No había personal disponible en el lugar"
+                      />
+                    </Box>
+
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.oficinaCerrada ? "checked" : ""}`}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={reportData.motivos.oficinaCerrada}
+                            onChange={(e) => handleReportCheckboxChange("oficinaCerrada", e.target.checked)}
+                          />
+                        }
+                        label="La oficina o espacio estaba cerrado"
+                      />
+                    </Box>
+
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.largoTiempoEspera ? "checked" : ""}`}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={reportData.motivos.largoTiempoEspera}
+                            onChange={(e) => handleReportCheckboxChange("largoTiempoEspera", e.target.checked)}
+                          />
+                        }
+                        label="Tiempo de espera excesivamente largo"
+                      />
+                    </Box>
+
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.personalOcupado ? "checked" : ""}`}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={reportData.motivos.personalOcupado}
+                            onChange={(e) => handleReportCheckboxChange("personalOcupado", e.target.checked)}
+                          />
+                        }
+                        label="El personal estaba ocupado y no pudo atenderme"
+                      />
+                    </Box>
+
+                    <Box className={`openmap-report-checkbox-item ${reportData.motivos.otro ? "checked" : ""}`}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={reportData.motivos.otro}
+                            onChange={(e) => handleReportCheckboxChange("otro", e.target.checked)}
+                          />
+                        }
+                        label="Otro motivo (especificar en comentarios)"
+                      />
+                    </Box>
+                  </FormGroup>
                 </Box>
 
-                <Box className="openmap-report-field">
-                  <TextField
-                    label="Teléfono (Opcional)"
-                    value={reportData.telefono}
-                    onChange={(e) => handleReportInputChange("telefono", e.target.value)}
-                    fullWidth
-                    placeholder="+56 9 1234 5678"
-                  />
+                <Box className="openmap-report-section">
+                  <Typography className="openmap-report-section-title">Comentarios Adicionales</Typography>
+
+                  <Box className="openmap-report-field">
+                    <TextField
+                      label="Comentarios"
+                      multiline
+                      rows={4}
+                      value={reportData.comentarios}
+                      onChange={(e) => handleReportInputChange("comentarios", e.target.value)}
+                      fullWidth
+                      placeholder="Describa con más detalle su experiencia o cualquier información adicional que considere relevante..."
+                    />
+                  </Box>
                 </Box>
-              </Box>
 
-              <Box className="openmap-report-section">
-                <Typography className="openmap-report-section-title">Motivo de la Falta de Atención</Typography>
-                <Typography variant="body2" sx={{ mb: 2, color: "#64748b" }}>
-                  Seleccione todos los motivos que apliquen a su situación:
-                </Typography>
-
-                <FormGroup className="openmap-report-checkbox-group">
-                  <Box className={`openmap-report-checkbox-item ${reportData.motivos.noHabiaPersonal ? "checked" : ""}`}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={reportData.motivos.noHabiaPersonal}
-                          onChange={(e) => handleReportCheckboxChange("noHabiaPersonal", e.target.checked)}
-                        />
-                      }
-                      label="No había personal disponible en el lugar"
-                    />
-                  </Box>
-
-                  <Box className={`openmap-report-checkbox-item ${reportData.motivos.oficinaCerrada ? "checked" : ""}`}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={reportData.motivos.oficinaCerrada}
-                          onChange={(e) => handleReportCheckboxChange("oficinaCerrada", e.target.checked)}
-                        />
-                      }
-                      label="La oficina o espacio estaba cerrado"
-                    />
-                  </Box>
-
-                  <Box className={`openmap-report-checkbox-item ${reportData.motivos.largoTiempoEspera ? "checked" : ""}`}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={reportData.motivos.largoTiempoEspera}
-                          onChange={(e) => handleReportCheckboxChange("largoTiempoEspera", e.target.checked)}
-                        />
-                      }
-                      label="Tiempo de espera excesivamente largo"
-                    />
-                  </Box>
-
-                  <Box className={`openmap-report-checkbox-item ${reportData.motivos.personalOcupado ? "checked" : ""}`}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={reportData.motivos.personalOcupado}
-                          onChange={(e) => handleReportCheckboxChange("personalOcupado", e.target.checked)}
-                        />
-                      }
-                      label="El personal estaba ocupado y no pudo atenderme"
-                    />
-                  </Box>
-
-                  <Box className={`openmap-report-checkbox-item ${reportData.motivos.otro ? "checked" : ""}`}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={reportData.motivos.otro}
-                          onChange={(e) => handleReportCheckboxChange("otro", e.target.checked)}
-                        />
-                      }
-                      label="Otro motivo (especificar en comentarios)"
-                    />
-                  </Box>
-                </FormGroup>
-              </Box>
-
-              <Box className="openmap-report-section">
-                <Typography className="openmap-report-section-title">Comentarios Adicionales</Typography>
-
-                <Box className="openmap-report-field">
-                  <TextField
-                    label="Comentarios"
-                    multiline
-                    rows={4}
-                    value={reportData.comentarios}
-                    onChange={(e) => handleReportInputChange("comentarios", e.target.value)}
-                    fullWidth
-                    placeholder="Describa con más detalle su experiencia o cualquier información adicional que considere relevante..."
-                  />
-                </Box>
-              </Box>
-
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={reportLoading}
-                className="openmap-report-submit-button"
-              >
-                {reportLoading ? (
-                  <Box className="openmap-report-loading">
-                    <Box className="openmap-report-loading-spinner" />
-                    Enviando reporte...
-                  </Box>
-                ) : (
-                  "Enviar Reporte de Atención"
-                )}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={reportLoading}
+                  className="openmap-report-submit-button"
+                >
+                  {reportLoading ? (
+                    <Box className="openmap-report-loading">
+                      <Box className="openmap-report-loading-spinner" />
+                      Enviando reporte...
+                    </Box>
+                  ) : (
+                    "Enviar Reporte de Atención"
+                  )}
+                </Button>
+              </form>
+            </Box>
           ) : (
             <Box className="openmap-report-success">
               <Typography className="openmap-report-success-title">¡Reporte Enviado Exitosamente!</Typography>

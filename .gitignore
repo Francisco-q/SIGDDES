@@ -48,6 +48,248 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
+
+# ================================
+# VARIABLES DE ENTORNO Y SECRETOS
+# ================================
+# Archivos de configuración con datos sensibles
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.env
+!.env.example
+
+# Archivos de configuración específicos
+config.json
+secrets.json
+.secrets/
+credentials.json
+
+# Archivos de base de datos locales
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+local.db
+
+# ================================
+# ARCHIVOS DE SISTEMA Y TEMPORALES
+# ================================
+# Archivos del sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archivos temporales
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+
+# ================================
+# DEPENDENCIAS Y NODE_MODULES
+# ================================
+# Frontend (Node.js/React)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Yarn v2+
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ================================
+# ARCHIVOS DE BUILD Y DIST
+# ================================
+# Frontend build outputs
+/Frontend/dist/
+/Frontend/build/
+/Frontend/.next/
+/Frontend/out/
+
+# Backend static files
+/backend/staticfiles/
+/backend/static/
+/backend/media/uploads/
+/backend/media/qr_codes/
+/backend/media/images/
+
+# Vite
+.vite/
+
+# ================================
+# IDE Y EDITORES
+# ================================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ================================
+# ARCHIVOS DE DEPLOY Y PRODUCCIÓN
+# ================================
+# Certificados SSL
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# Archivos de configuración de servidores
+nginx.conf
+apache.conf
+.htaccess
+
+# Docker (si decides usar en el futuro)
+.dockerignore
+Dockerfile.prod
+docker-compose.prod.yml
+
+# ================================
+# ARCHIVOS DE DESARROLLO
+# ================================
+# Coverage reports
+coverage/
+.nyc_output/
+lcov.info
+
+# Testing
+.pytest_cache/
+pytest.ini
+.coverage
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ================================
+# ARCHIVOS ESPECÍFICOS DE SAFEVG
+# ================================
+# Logs del sistema
+safevg.log
+debug.log
+error.log
+access.log
+
+# Archivos de backup
+*.bak
+*.backup
+backup/
+backups/
+
+# Archivos de migración local (solo para desarrollo)
+*/migrations/0*_local_*.py
+
+# Archivos de datos de prueba
+test_data/
+fixtures/local/
+seeds/local/
+
+# Cache de Django
+.django_cache/
+
+# Archivos de sesión
+django_session
+
+# ================================
+# ARCHIVOS DE HERRAMIENTAS DE TERCEROS
+# ================================
+# Webpack
+.webpack/
+
+# Parcel
+.parcel-cache/
+
+# Storybook
+.out
+.storybook-out
+
+# ESLint
+.eslintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# ================================
+# COMENTARIOS PARA EL EQUIPO
+# ================================
+# Este .gitignore está configurado para el proyecto SafeVG
+# 
+# IMPORTANTE: 
+# - Nunca commitear archivos .env con datos reales
+# - Solo usar .env.example como plantilla
+# - Configurar variables de entorno en el servidor de producción
+# - Los archivos media/ se manejan en producción, no en Git
+# 
+# Para agregar nuevas exclusiones, seguir la estructura por categorías
 .pytest_cache/
 cover/
 
@@ -197,3 +439,6 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+Documentos/*
+plantillaTesis/*

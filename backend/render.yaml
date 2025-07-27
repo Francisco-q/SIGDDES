@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: safevg-backend
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn django_crud_api.wsgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: django_crud_api.settings_production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_NAME
+        fromDatabase:
+          name: safevg-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: safevg-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: safevg-postgres
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: safevg-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: safevg-postgres
+          property: port
+
+databases:
+  - name: safevg-postgres
+    databaseName: safevg_production
+    user: safevg_user

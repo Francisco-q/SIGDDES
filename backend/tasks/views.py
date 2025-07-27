@@ -475,6 +475,20 @@ class ImageListView(viewsets.ViewSet):
         serializer = ImageUploadSerializer(images, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def destroy(self, request, pk=None):
+        # Solo admin puede borrar
+        if not request.user.is_authenticated or request.user.userprofile.role != 'admin':
+            return Response({'detail': 'Solo administradores pueden borrar imágenes.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            image = ImageUpload.objects.get(pk=pk)
+        except ImageUpload.DoesNotExist:
+            return Response({'detail': 'Imagen no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+        # Eliminar archivo físico
+        if image.image and os.path.exists(image.image.path):
+            os.remove(image.image.path)
+        image.delete()
+        return Response({'detail': 'Imagen eliminada correctamente.'}, status=status.HTTP_204_NO_CONTENT)
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated()]

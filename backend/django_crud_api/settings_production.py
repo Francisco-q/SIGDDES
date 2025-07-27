@@ -9,9 +9,10 @@ DEBUG = False
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'safevg.onrender.com',  # Para Render
-    'safevg.railway.app',   # Para Railway
-    'safevg.vercel.app',    # Para Vercel
+    'front-0opi.onrender.com',  # URL real de Render
+    'safevg.onrender.com',      # Para Render personalizado
+    'safevg.railway.app',       # Para Railway
+    'safevg.vercel.app',        # Para Vercel
     config('PRODUCTION_HOST', default='localhost'),
 ]
 

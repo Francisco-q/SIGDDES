@@ -2,6 +2,9 @@ import os
 from .settings import *
 from decouple import config
 
+# Importar configuración de Cloudinary
+from .cloudinary_config import CLOUDINARY_STORAGE, DEFAULT_FILE_STORAGE
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
@@ -20,6 +23,7 @@ ALLOWED_HOSTS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise debe ir después de SecurityMiddleware
+    'django_crud_api.middleware.MediaWhiteNoiseMiddleware',  # Middleware personalizado para media
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,9 +66,30 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 
+# Configurar WhiteNoise para servir archivos media también
+WHITENOISE_SERVE_STATIC_FILES = True
+WHITENOISE_STATIC_PREFIX = '/static/'
+
 # Configuración de archivos media
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Configuración de almacenamiento (Cloudinary en producción)
+DEFAULT_FILE_STORAGE = DEFAULT_FILE_STORAGE
+if DEFAULT_FILE_STORAGE == 'cloudinary_storage.storage.MediaCloudinaryStorage':
+    # Configurar Cloudinary
+    CLOUDINARY_STORAGE = CLOUDINARY_STORAGE
+    # La URL de media será servida por Cloudinary
+    print("✓ Usando Cloudinary para almacenamiento de archivos media")
+else:
+    print("⚠ Usando almacenamiento local para archivos media")
+
+# Configurar rutas adicionales para WhiteNoise (incluir media) - Solo si no usamos Cloudinary
+WHITENOISE_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+if DEFAULT_FILE_STORAGE != 'cloudinary_storage.storage.MediaCloudinaryStorage':
+    WHITENOISE_DIRECTORIES = [
+        ('media', os.path.join(BASE_DIR, 'media')),
+    ]
 
 # CORS para producción
 CORS_ALLOWED_ORIGINS = [

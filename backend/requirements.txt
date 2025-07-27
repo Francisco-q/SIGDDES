@@ -29,6 +29,10 @@ gunicorn==23.0.0
 # Archivos estáticos
 whitenoise==6.7.0
 
+# Almacenamiento en la nube
+cloudinary==2.0.0
+django-cloudinary-storage==0.3.0
+
 # Configuración de entorno
 python-decouple==3.8
 

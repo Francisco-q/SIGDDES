@@ -22,6 +22,7 @@ import { es } from "date-fns/locale";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Slider from "react-slick";
+import axios from "axios";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import axiosInstance from "../../../services/axiosInstance";
@@ -351,8 +352,8 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       setQrGenerated(true);
       const qrUrl = response.data.qr_image;
 
-      // Fetch the image as a blob
-      const imageResponse = await axiosInstance.get(qrUrl, {
+      // Fetch the image as a blob - usar axios directamente para URLs completas
+      const imageResponse = await axios.get(qrUrl, {
         responseType: 'blob',
         headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
       });
@@ -384,8 +385,8 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     if (!punto || !punto.qr_image) return;
 
     try {
-      // Fetch the existing QR image as a blob
-      const imageResponse = await axiosInstance.get(punto.qr_image, {
+      // Fetch the existing QR image as a blob - usar axios directamente para URLs completas
+      const imageResponse = await axios.get(punto.qr_image, {
         responseType: 'blob',
         headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
       });

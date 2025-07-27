@@ -1,37 +1,79 @@
-asgiref==3.8.1
-certifi==2024.12.14
-charset-normalizer==3.4.1
-colorama==0.4.6
-coreschema==0.0.4
+# ========================================
+# DEPENDENCIAS COMPLETAS PARA SAFEVG BACKEND
+# ========================================
+
+# Framework principal
 Django==5.1.4
-django-cors-headers==4.6.0
-django-extensions==3.2.3
 djangorestframework==3.15.2
 djangorestframework_simplejwt==5.5.0
-drf-yasg==1.21.8
-gunicorn==23.0.0
-idna==3.10
-inflection==0.5.1
-itypes==1.2.0
-Jinja2==3.1.5
-MarkupSafe==3.0.2
-packaging==24.2
-pillow==11.1.0
+
+# Base de datos
 psycopg2-binary==2.9.10
+dj-database-url==2.2.0
+
+# Autenticación y JWT
 PyJWT==2.9.0
+
+# CORS para frontend
+django-cors-headers==4.6.0
+
+# Documentación API (Swagger)
+drf-yasg==1.21.8
+
+# Extensiones Django
+django-extensions==3.2.3
+
+# Servidor de producción
+gunicorn==23.0.0
+
+# Archivos estáticos
+whitenoise==6.7.0
+
+# Configuración de entorno
 python-decouple==3.8
+
+# Generación de QR
 qrcode==8.1
+
+# Requests HTTP
 requests==2.32.3
+
+# Algoritmos de grafos (para pathfinding)
+networkx==3.2.1
+
+# Procesamiento de imágenes
+pillow==11.1.0
+
+# Dependencias de sistema
+asgiref==3.8.1
+sqlparse==0.5.3
+tzdata==2024.2
+pytz==2024.2
+setuptools==75.8.0
+
+# Dependencias de drf-yasg
+coreschema==0.0.4
+uritemplate==4.1.1
+inflection==0.5.1
 ruamel.yaml==0.18.9
 ruamel.yaml.clib==0.2.12
 swagger-spec-validator==3.0.4
-typing_extensions==4.12.2
-uritemplate==4.1.1
+
+# Dependencias generales
+certifi==2024.12.14
+charset-normalizer==3.4.1
+colorama==0.4.6
+idna==3.10
 urllib3==2.3.0
-whitenoise==6.7.0
-dj-database-url==2.2.0
-pytz==2024.2
+packaging==24.2
+typing_extensions==4.12.2
+
+# Template engine
+Jinja2==3.1.5
+MarkupSafe==3.0.2
+
+# YAML support
 PyYAML==6.0.2
-setuptools==75.8.0
-sqlparse==0.5.3
-tzdata==2024.2
+
+# Validación JSON schema
+itypes==1.2.0

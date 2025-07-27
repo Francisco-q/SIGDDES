@@ -3,7 +3,7 @@ const isDevelopment = import.meta.env.DEV;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
   isDevelopment 
     ? 'http://localhost:8000' 
-    : 'https://safevg-backend.onrender.com'
+    : 'https://front-0opi.onrender.com'
 );
 
 export const API_CONFIG = {

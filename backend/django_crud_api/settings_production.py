@@ -64,8 +64,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CORS para producción
 CORS_ALLOWED_ORIGINS = [
-    "https://safevg-frontend.vercel.app",
-    "https://safevg.netlify.app",
+    "https://safevg.vercel.app",  # URL de producción
     config('FRONTEND_URL', default='http://localhost:5173'),
 ]
 

@@ -35,6 +35,8 @@ services:
         fromDatabase:
           name: safevg-postgres
           property: port
+      - key: FRONTEND_URL
+        value: https://safevg.vercel.app
       # Variables del superusuario - SE CONFIGURAN EN RENDER DASHBOARD
       - key: SUPERUSER_USERNAME
         sync: false  # Se configura manualmente en Render

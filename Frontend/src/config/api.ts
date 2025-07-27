@@ -14,7 +14,7 @@ export const API_CONFIG = {
     PATHS: '/api/paths/',
     DENUNCIAS: '/api/denuncias/',
     REPORTES: '/api/reportes-atencion/',
-    AUTH: '/api/auth/',
+    AUTH: '/api/token/',
     IMAGES: '/api/images/',
   },
   TIMEOUT: 10000,

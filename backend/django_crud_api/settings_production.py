@@ -99,6 +99,9 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# URL del frontend para QR codes - DEBE APUNTAR AL FRONTEND EN PRODUCCIÓN
+FRONTEND_BASE_URL = config('FRONTEND_BASE_URL', default='https://safevg.vercel.app')
+
 # Logging para producción
 LOGGING = {
     'version': 1,

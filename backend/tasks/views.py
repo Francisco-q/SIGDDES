@@ -111,7 +111,14 @@ class TotemQRViewSet(viewsets.ModelViewSet):
         file_content = ContentFile(buffer.getvalue(), name=file_name)
 
         default_storage.save(file_path, file_content)
-        qr_image_url = request.build_absolute_uri(default_storage.url(file_path))
+        
+        # Construir URL correcta para producción
+        if hasattr(settings, 'DEBUG') and not settings.DEBUG:
+            # En producción, usar URL fija del backend
+            qr_image_url = f"https://front-0opi.onrender.com/media/{file_path}"
+        else:
+            # En desarrollo, usar URL relativa
+            qr_image_url = request.build_absolute_uri(default_storage.url(file_path))
 
         image_upload = ImageUpload.objects.create(
             point_id=totem.id,
@@ -216,7 +223,14 @@ class ReceptionQRViewSet(viewsets.ModelViewSet):
         file_content = ContentFile(buffer.getvalue(), name=file_name)
 
         default_storage.save(file_path, file_content)
-        qr_image_url = request.build_absolute_uri(default_storage.url(file_path))
+        
+        # Construir URL correcta para producción
+        if hasattr(settings, 'DEBUG') and not settings.DEBUG:
+            # En producción, usar URL fija del backend
+            qr_image_url = f"https://front-0opi.onrender.com/media/{file_path}"
+        else:
+            # En desarrollo, usar URL relativa
+            qr_image_url = request.build_absolute_uri(default_storage.url(file_path))
 
         image_upload = ImageUpload.objects.create(
             point_id=reception.id,

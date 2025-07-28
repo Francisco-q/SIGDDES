@@ -1,1 +1,7 @@
 .vercel
+
+# Environment variables (but keep .env.production for Vercel)
+.env
+.env.local
+.env.development
+# Keep .env.production for deployment

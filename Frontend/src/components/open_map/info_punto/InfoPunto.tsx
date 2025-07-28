@@ -234,11 +234,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
     return () => clearInterval(interval)
   }, [punto, isEditing, selectedDays])
 
-  useEffect(() => {
-    if (punto && open && typeof punto.id === "number") {
-      fetchImages()
-    }
-  }, [punto, open])
+  // REMOVED: Duplicate useEffect for fetchImages - already called above
 
   const updateScheduleFromTimePickers = useCallback(() => {
     if (!isEditing) return
@@ -351,6 +347,15 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
 
       setQrGenerated(true);
       const qrUrl = response.data.qr_image;
+      
+      // Actualizar el estado local del QR para mostrarlo en la interfaz
+      setQrImage(qrUrl);
+      
+      // Actualizar el punto con la nueva imagen QR
+      if (punto) {
+        const updatedPunto = { ...punto, qr_image: qrUrl };
+        onSave(updatedPunto);
+      }
 
       // Fetch the image as a blob - usar axios directamente para URLs completas
       const imageResponse = await axios.get(qrUrl, {

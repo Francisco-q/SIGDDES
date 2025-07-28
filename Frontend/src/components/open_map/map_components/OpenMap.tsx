@@ -662,7 +662,7 @@ const OpenMap: React.FC = () => {
       )}
 
       {tabValue === 1 && (
-        <Box className="openmap-form-container" sx={{ mt: 4, mb: 4 }}>
+        <Box className="openmap-form-container" sx={{ mt: 8, mb: 8 }}>
           {role === 'guest' ? (
             <Box sx={{ textAlign: "center", mt: 10 }}>
               <Typography variant="h5">Por favor, inicia sesión para acceder a la entrevista de acogida.</Typography>
@@ -692,7 +692,7 @@ const OpenMap: React.FC = () => {
       )}
 
       {tabValue === 2 && (
-        <Box className="openmap-report-container" sx={{ mt: 4, mb: 4 }}>
+        <Box className="openmap-report-container" sx={{ mt: 8, mb: 8 }}>
           {!reportSubmitted ? (
             <Box className="openmap-report-form">
               <Box className="openmap-report-header">

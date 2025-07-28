@@ -216,6 +216,7 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
       setQrGenerated(punto.qr_image && punto.qr_image.trim() !== '' ? true : false);
       setErrors({});
       setIsEditing(false);
+      setIsDeleting(false); // Reset del estado de eliminación
       fetchImages();
     }
   }, [punto, open]);
@@ -520,7 +521,14 @@ const InfoPunto: React.FC<InfoPuntoProps> = ({ open, punto, role, onClose, onSav
   const handleDelete = () => {
     if (punto) {
       setIsDeleting(true)
-      onDelete(punto.id, isTotem)
+      try {
+        onDelete(punto.id, isTotem)
+        // El componente padre se encargará de cerrar el modal
+        // No necesitamos hacer nada más aquí
+      } catch (error) {
+        console.error("Error en handleDelete:", error)
+        setIsDeleting(false)
+      }
     }
   }
 

@@ -360,20 +360,27 @@ const OpenMap: React.FC = () => {
       const endpoint = isTotem ? "totems" : "recepciones";
       await axiosInstance.delete(`${endpoint}/${pointId}/`);
 
+      // Actualizar estado local inmediatamente
       if (isTotem) {
-        setTotems(totems.filter((t) => t.id !== pointId));
+        setTotems(prev => prev.filter((t) => t.id !== pointId));
       } else {
-        setReceptions(receptions.filter((r) => r.id !== pointId));
+        setReceptions(prev => prev.filter((r) => r.id !== pointId));
       }
 
+      // Cerrar modal y limpiar estado seleccionado
       handleCloseModal();
+      
+      // Forzar actualización del estado si es necesario
+      setError(null);
+      
     } catch (error: any) {
       console.error("Error deleting point:", error);
       if (error.response?.status === 404) {
+        // Si el punto ya no existe en el servidor, eliminarlo del estado local
         if (isTotem) {
-          setTotems(totems.filter((t) => t.id !== pointId));
+          setTotems(prev => prev.filter((t) => t.id !== pointId));
         } else {
-          setReceptions(receptions.filter((r) => r.id !== pointId));
+          setReceptions(prev => prev.filter((r) => r.id !== pointId));
         }
         handleCloseModal();
       } else {

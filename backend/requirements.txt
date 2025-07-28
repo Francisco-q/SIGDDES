@@ -30,7 +30,7 @@ gunicorn==23.0.0
 whitenoise==6.7.0
 
 # Almacenamiento en la nube
-cloudinary==2.0.0
+cloudinary==1.44.1
 django-cloudinary-storage==0.3.0
 
 # Configuración de entorno

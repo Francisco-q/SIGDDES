@@ -19,6 +19,14 @@ class MediaWhiteNoiseMiddleware:
     def __call__(self, request):
         # Si la URL empieza con /media/, intentar servir el archivo
         if request.path.startswith('/media/'):
+            # Manejar preflight requests de CORS
+            if request.method == 'OPTIONS':
+                response = HttpResponse()
+                response['Access-Control-Allow-Origin'] = '*'
+                response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+                response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+                response['Access-Control-Max-Age'] = '86400'
+                return response
             return self.serve_media(request)
             
         response = self.get_response(request)
@@ -26,7 +34,7 @@ class MediaWhiteNoiseMiddleware:
         
     def serve_media(self, request):
         """
-        Servir archivos media directamente
+        Servir archivos media directamente con headers CORS
         """
         try:
             # Obtener la ruta del archivo
@@ -44,6 +52,12 @@ class MediaWhiteNoiseMiddleware:
                 
             response = HttpResponse(file_obj.read(), content_type=content_type)
             response['Content-Disposition'] = f'inline; filename="{os.path.basename(path)}"'
+            
+            # Agregar headers CORS para permitir acceso desde el frontend
+            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+            response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response['Access-Control-Max-Age'] = '86400'  # 24 horas
             
             return response
             

@@ -12,8 +12,17 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 def serve_media(request, path):
     """
-    Vista personalizada para servir archivos media en producción
+    Vista personalizada para servir archivos media en producción con CORS
     """
+    # Manejar preflight requests de CORS
+    if request.method == 'OPTIONS':
+        response = HttpResponse()
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response['Access-Control-Max-Age'] = '86400'
+        return response
+    
     # Construir la ruta completa del archivo
     full_path = os.path.join(settings.MEDIA_ROOT, path)
     
@@ -46,12 +55,21 @@ def serve_media(request, path):
     logger.info(f"Serving file with content type: {content_type}")
     
     try:
-        # Servir el archivo
-        return FileResponse(
+        # Servir el archivo con headers CORS
+        response = FileResponse(
             open(full_path, 'rb'),
             content_type=content_type,
             as_attachment=False
         )
+        
+        # Agregar headers CORS
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response['Access-Control-Max-Age'] = '86400'
+        
+        return response
+        
     except Exception as e:
         logger.error(f"Error serving file {full_path}: {str(e)}")
         raise Http404(f"Error serving file: {str(e)}")

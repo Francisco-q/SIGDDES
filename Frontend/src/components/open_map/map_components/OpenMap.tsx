@@ -662,7 +662,7 @@ const OpenMap: React.FC = () => {
       )}
 
       {tabValue === 1 && (
-        <Box className="openmap-form-container">
+        <Box className="openmap-form-container" sx={{ mt: 4, mb: 4 }}>
           {role === 'guest' ? (
             <Box sx={{ textAlign: "center", mt: 10 }}>
               <Typography variant="h5">Por favor, inicia sesión para acceder a la entrevista de acogida.</Typography>
@@ -692,7 +692,7 @@ const OpenMap: React.FC = () => {
       )}
 
       {tabValue === 2 && (
-        <Box className="openmap-report-container">
+        <Box className="openmap-report-container" sx={{ mt: 4, mb: 4 }}>
           {!reportSubmitted ? (
             <Box className="openmap-report-form">
               <Box className="openmap-report-header">
@@ -879,7 +879,7 @@ const OpenMap: React.FC = () => {
             </Button>
           </Tooltip>
         )}
-        {["admin", "superuser"].includes(role as string) && (
+        {tabValue === 0 && ["admin", "superuser"].includes(role as string) && (
           <>
             <Tooltip title={isCreatingPath ? "Cancelar Crear Camino" : "Crear Camino"}>
               <Button
@@ -940,28 +940,32 @@ const OpenMap: React.FC = () => {
             </Tooltip>
           </>
         )}
-        <Tooltip title={showPointNames ? "Ocultar Nombres de Puntos" : "Mostrar Nombres de Puntos"}>
-          <Button
-            onClick={() => setShowPointNames(!showPointNames)}
-            variant="contained"
-            color={showPointNames ? "secondary" : "primary"}
-            className="openmap-button"
-            aria-label={showPointNames ? "Ocultar Nombres de Puntos" : "Mostrar Nombres de Puntos"}
-          >
-            {showPointNames ? <VisibilityOffIcon /> : <VisibilityIcon />}
-          </Button>
-        </Tooltip>
-        <Tooltip title={showPaths ? "Ocultar Caminos" : "Mostrar Caminos"}>
-          <Button
-            onClick={toggleShowPaths}
-            variant="contained"
-            color={showPaths ? "secondary" : "primary"}
-            className="openmap-button"
-            aria-label={showPaths ? "Ocultar Caminos" : "Mostrar Caminos"}
-          >
-            {showPaths ? <VisibilityOffIcon /> : <VisibilityIcon />}
-          </Button>
-        </Tooltip>
+        {tabValue === 0 && (
+          <>
+            <Tooltip title={showPointNames ? "Ocultar Nombres de Puntos" : "Mostrar Nombres de Puntos"}>
+              <Button
+                onClick={() => setShowPointNames(!showPointNames)}
+                variant="contained"
+                color={showPointNames ? "secondary" : "primary"}
+                className="openmap-button"
+                aria-label={showPointNames ? "Ocultar Nombres de Puntos" : "Mostrar Nombres de Puntos"}
+              >
+                {showPointNames ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              </Button>
+            </Tooltip>
+            <Tooltip title={showPaths ? "Ocultar Caminos" : "Mostrar Caminos"}>
+              <Button
+                onClick={toggleShowPaths}
+                variant="contained"
+                color={showPaths ? "secondary" : "primary"}
+                className="openmap-button"
+                aria-label={showPaths ? "Ocultar Caminos" : "Mostrar Caminos"}
+              >
+                {showPaths ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              </Button>
+            </Tooltip>
+          </>
+        )}
       </Box>
 
       <InfoPunto

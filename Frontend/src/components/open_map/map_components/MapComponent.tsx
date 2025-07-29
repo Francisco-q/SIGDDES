@@ -1,7 +1,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useRef, useState } from 'react';
-import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
+import { Circle, ImageOverlay, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { Path, ReceptionQR, TotemQR } from '../../../types/types';
 import SetView from '../MapaUtils/SetView';
 
@@ -302,7 +302,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         onClick={onPathClick}
                     />
                 ))}
-            <ZoomControl position="topright" />
         </MapContainer>
     );
 };

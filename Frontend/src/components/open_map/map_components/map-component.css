@@ -167,6 +167,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     border-radius: 8px !important;
     overflow: hidden;
+    margin-top: 60px !important; /* Margen superior para evitar superposición con UI */
 }
 
 .leaflet-control-zoom a {
@@ -205,6 +206,12 @@
         top: 12px;
         left: 12px;
         right: 12px;
+    }
+    
+    /* Asegurar que los controles de zoom tengan suficiente espacio */
+    .leaflet-control-zoom {
+        margin-top: 80px !important;
+        margin-right: 12px !important;
     }
 }
 

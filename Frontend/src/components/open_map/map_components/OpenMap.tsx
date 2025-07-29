@@ -1,7 +1,6 @@
 import {
   Cancel as CancelIcon,
   Home as HomeIcon,
-  Menu as MenuIcon,
   QrCode as QrCodeIcon,
   ReportProblem as ReportIcon,
   Route as RouteIcon,
@@ -93,9 +92,6 @@ const OpenMap: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [selectedPath, setSelectedPath] = useState<Path | null>(null);
   const [isPathModalOpen, setIsPathModalOpen] = useState(false);
-  
-  // Mobile menu state
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Report states
   const [reportSubmitted, setReportSubmitted] = useState(false);
@@ -971,135 +967,6 @@ const OpenMap: React.FC = () => {
           </>
         )}
       </Box>
-
-      {/* Menú hamburguesa para móviles */}
-      {tabValue === 0 && (
-        <>
-          <Button
-            className="openmap-menu-toggle"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Abrir menú"
-          >
-            <MenuIcon />
-          </Button>
-          
-          <Box className={`openmap-mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
-            {role !== 'guest' && (
-              <Box 
-                className="openmap-mobile-menu-item"
-                onClick={handleGoHome}
-              >
-                <HomeIcon />
-                <span className="openmap-mobile-menu-text">Volver al inicio</span>
-              </Box>
-            )}
-            
-            {["admin", "superuser"].includes(role as string) && (
-              <>
-                <Box 
-                  className="openmap-mobile-menu-item"
-                  onClick={() => {
-                    if (isCreatingPath) {
-                      setIsCreatingPath(false);
-                      setCurrentPathPoints([]);
-                      setPathName("");
-                    } else {
-                      setIsCreatingPath(true);
-                    }
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  {isCreatingPath ? <CancelIcon /> : <RouteIcon />}
-                  <span className="openmap-mobile-menu-text">
-                    {isCreatingPath ? "Cancelar Camino" : "Crear Camino"}
-                  </span>
-                </Box>
-                
-                {isCreatingPath && (
-                  <Box 
-                    className="openmap-mobile-menu-item"
-                    onClick={() => {
-                      savePath();
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <SaveIcon />
-                    <span className="openmap-mobile-menu-text">Guardar Camino</span>
-                  </Box>
-                )}
-                
-                <Box 
-                  className="openmap-mobile-menu-item"
-                  onClick={() => {
-                    setIsCreatingTotem(!isCreatingTotem);
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  {isCreatingTotem ? <CancelIcon /> : <QrCodeIcon />}
-                  <span className="openmap-mobile-menu-text">
-                    {isCreatingTotem ? "Cancelar Punto QR" : "Crear Punto QR"}
-                  </span>
-                </Box>
-                
-                <Box 
-                  className="openmap-mobile-menu-item"
-                  onClick={() => {
-                    setIsCreatingReception(!isCreatingReception);
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  {isCreatingReception ? <CancelIcon /> : <ShieldIcon />}
-                  <span className="openmap-mobile-menu-text">
-                    {isCreatingReception ? "Cancelar Espacio Seguro" : "Crear Espacio Seguro"}
-                  </span>
-                </Box>
-              </>
-            )}
-            
-            <Box 
-              className="openmap-mobile-menu-item"
-              onClick={() => {
-                setShowPointNames(!showPointNames);
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              {showPointNames ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              <span className="openmap-mobile-menu-text">
-                {showPointNames ? "Ocultar Nombres" : "Mostrar Nombres"}
-              </span>
-            </Box>
-            
-            <Box 
-              className="openmap-mobile-menu-item"
-              onClick={() => {
-                toggleShowPaths();
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              {showPaths ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              <span className="openmap-mobile-menu-text">
-                {showPaths ? "Ocultar Caminos" : "Mostrar Caminos"}
-              </span>
-            </Box>
-          </Box>
-        </>
-      )}
-
-      {/* Overlay para cerrar menú móvil */}
-      {isMobileMenuOpen && (
-        <Box
-          onClick={() => setIsMobileMenuOpen(false)}
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 999,
-            background: 'rgba(0, 0, 0, 0.3)',
-          }}
-        />
-      )}
 
       <InfoPunto
         open={isModalOpen}

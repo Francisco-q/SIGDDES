@@ -326,32 +326,35 @@
 .openmap-buttons-container {
     position: fixed;
     bottom: 20px;
-    left: 10px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     flex-direction: row;
-    gap: 10px;
+    gap: 8px;
     z-index: 1000;
-    flex-wrap: nowrap;
-    padding: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 90vw;
 }
 
 .openmap-button {
-    min-width: 40px;
-    height: 40px;
-    padding: 10px;
-    border-radius: 8px;
+    min-width: 44px;
+    height: 44px;
+    padding: 8px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.2s, background-color 0.2s;
-    /* Mejoras de accesibilidad */
     outline: none;
     border: 2px solid transparent;
+    flex-shrink: 0;
 }
 
 .openmap-button:hover {
@@ -369,86 +372,6 @@
     cursor: not-allowed;
 }
 
-/* Botón hamburguesa para móviles */
-.openmap-menu-toggle {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1001;
-    min-width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #6200ea;
-    color: white;
-    border: none;
-    box-shadow: 0 4px 20px rgba(98, 0, 234, 0.3);
-    transition: all 0.3s ease;
-}
-
-.openmap-menu-toggle:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 24px rgba(98, 0, 234, 0.4);
-}
-
-/* Menú desplegable para móviles */
-.openmap-mobile-menu {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(20px);
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 60vh;
-    overflow-y: auto;
-    opacity: 0;
-    transform: scale(0.8) translateY(20px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-}
-
-.openmap-mobile-menu.open {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    pointer-events: all;
-}
-
-.openmap-mobile-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
-    cursor: pointer;
-    min-height: 48px;
-}
-
-.openmap-mobile-menu-item:hover {
-    background: rgba(98, 0, 234, 0.1);
-    transform: translateX(4px);
-}
-
-.openmap-mobile-menu-item:active {
-    transform: scale(0.98);
-}
-
-.openmap-mobile-menu-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    white-space: nowrap;
-}
-
 /* Estilo para tooltips */
 .MuiTooltip-tooltip {
     font-size: 0.9rem;
@@ -459,16 +382,20 @@
 
 /* Responsividad */
 @media (max-width: 768px) {
-    /* Ocultar botones normales en móvil */
     .openmap-buttons-container {
-        display: none;
+        bottom: 15px;
+        left: 15px;
+        right: 15px;
+        transform: none;
+        gap: 6px;
+        padding: 8px;
+        max-width: none;
     }
     
-    /* Mostrar menú hamburguesa en móvil */
-    .openmap-menu-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .openmap-button {
+        min-width: 40px;
+        height: 40px;
+        padding: 6px;
     }
 
     .info-punto-drawer .MuiDrawer-paper {
@@ -504,44 +431,18 @@
 
 /* Para pantallas muy pequeñas */
 @media (max-width: 480px) {
-    .openmap-mobile-menu {
-        right: 10px;
+    .openmap-buttons-container {
+        bottom: 10px;
         left: 10px;
-        bottom: 80px;
-        max-height: 50vh;
+        right: 10px;
+        gap: 4px;
+        padding: 6px;
     }
     
-    .openmap-menu-toggle {
-        right: 15px;
-        bottom: 15px;
-        min-width: 44px;
-        height: 44px;
-    }
-    
-    .openmap-mobile-menu-item {
-        padding: 10px 14px;
-        min-height: 44px;
-    }
-    
-    .openmap-mobile-menu-text {
-        font-size: 13px;
-    }
-}
-
-/* Para pantallas extra pequeñas */
-@media (max-width: 360px) {
-    .openmap-mobile-menu {
-        padding: 12px;
-        gap: 8px;
-    }
-    
-    .openmap-mobile-menu-item {
-        padding: 8px 12px;
-        min-height: 40px;
-    }
-    
-    .openmap-mobile-menu-text {
-        font-size: 12px;
+    .openmap-button {
+        min-width: 36px;
+        height: 36px;
+        padding: 4px;
     }
 }
 

@@ -325,7 +325,7 @@
 /* Estilos para los botones */
 .openmap-buttons-container {
     position: fixed;
-    bottom: 20px;
+    bottom: max(20px, env(safe-area-inset-bottom, 0px) + 10px);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -341,6 +341,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.2);
     max-width: 90vw;
+    margin-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .openmap-button {
@@ -383,13 +384,14 @@
 /* Responsividad */
 @media (max-width: 768px) {
     .openmap-buttons-container {
-        bottom: 15px;
+        bottom: max(80px, env(safe-area-inset-bottom, 0px) + 60px) !important;
         left: 15px;
         right: 15px;
         transform: none;
         gap: 6px;
         padding: 8px;
         max-width: none;
+        padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
     }
     
     .openmap-button {
@@ -432,11 +434,12 @@
 /* Para pantallas muy pequeñas */
 @media (max-width: 480px) {
     .openmap-buttons-container {
-        bottom: 10px;
+        bottom: max(100px, env(safe-area-inset-bottom, 0px) + 70px) !important;
         left: 10px;
         right: 10px;
         gap: 4px;
         padding: 6px;
+        padding-bottom: max(15px, env(safe-area-inset-bottom, 0px));
     }
     
     .openmap-button {
@@ -493,4 +496,38 @@
     --safevg-border-light: #f0e6ff;
     --safevg-text-muted: #64748b;
     --safevg-shadow-primary: rgba(220, 38, 38, 0.08);
+}
+
+/* Ajustes adicionales para navegación móvil */
+.openmap-container {
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    margin-bottom: 0 !important;
+}
+
+/* Para dispositivos con navegación gestual */
+@media (max-width: 768px) and (orientation: portrait) {
+    .openmap-buttons-container {
+        bottom: max(100px, env(safe-area-inset-bottom, 0px) + 60px) !important;
+    }
+}
+
+/* Soporte específico para iPhone con notch */
+@supports (padding: max(0px)) {
+    .openmap-buttons-container {
+        bottom: max(80px, env(safe-area-inset-bottom, 0px) + 40px) !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/* Fallback para navegadores antiguos que no soportan safe-area */
+@media (max-width: 768px) {
+    .openmap-buttons-container {
+        bottom: 90px !important; /* Fallback seguro */
+    }
+}
+
+@media (max-width: 480px) {
+    .openmap-buttons-container {
+        bottom: 110px !important; /* Fallback para móviles pequeños */
+    }
 }

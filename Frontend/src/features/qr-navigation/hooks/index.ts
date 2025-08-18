@@ -1,0 +1,1 @@
+export { useQRPoints } from './useQRPoints';

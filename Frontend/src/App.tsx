@@ -1,8 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import Home from './components/dashboard/Home';
-import Login from './components/login/Login';
+import { LoginPage, DashboardPage } from './pages';
 import MapComponent from './components/open_map/map_components/OpenMap';
 import axiosInstance from './services/axiosInstance';
 
@@ -103,10 +102,10 @@ const App: React.FC = () => {
           </Typography>
         )}
         <Routes>
-          <Route path="/" element={isLoggedIn ? <Navigate to="/home" replace /> : <Login onLogin={handleLogin} />} />
+          <Route path="/" element={isLoggedIn ? <Navigate to="/home" replace /> : <LoginPage onLogin={handleLogin} />} />
           <Route path="/mapa2/:campus" element={<MapComponent />} /> {/* Public route */}
           <Route element={<PrivateRoute role={role} />}>
-            <Route path="/home" element={<Home onLogout={handleLogout} />} />
+            <Route path="/home" element={<DashboardPage onLogout={handleLogout} />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

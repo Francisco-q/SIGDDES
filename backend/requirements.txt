@@ -10,6 +10,7 @@ djangorestframework_simplejwt==5.5.0
 # Base de datos
 psycopg2-binary==2.9.10
 dj-database-url==2.2.0
+oracledb==2.5.1
 
 # Autenticación y JWT
 PyJWT==2.9.0

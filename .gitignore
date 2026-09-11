@@ -63,6 +63,8 @@ coverage.xml
 .env.production.local
 *.env
 !.env.example
+!.env.utalca.example
+.last-deployed-commit
 
 # Archivos de configuración específicos
 config.json
@@ -210,6 +212,7 @@ pytest.ini
 
 # Environments
 venv/
+.test-venv/
 env/
 ENV/
 env.bak/

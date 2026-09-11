@@ -9,8 +9,11 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-*(3gj1n6xz86yh$qgqhp+r_!(jjj@(-_-i3a9a)_xz5v8$=fo@'
-DEBUG = True
+SECRET_KEY = config(
+    'SECRET_KEY',
+    default='django-insecure-development-only-change-me',
+)
+DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
@@ -68,16 +71,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'django_crud_api.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', default='5432'),  # Puerto por defecto de PostgreSQL
+DB_ENGINE = config('DB_ENGINE', default='django.db.backends.sqlite3')
+if DB_ENGINE == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -118,7 +130,7 @@ SIMPLE_JWT = {
 
 
 # Configuración de Jira
-JIRA_API_URL = config('JIRA_API_URL')
-JIRA_EMAIL = config('JIRA_EMAIL')
-JIRA_API_TOKEN = config('JIRA_API_TOKEN')
-JIRA_PROJECT_KEY = config('JIRA_PROJECT_KEY')
+JIRA_API_URL = config('JIRA_API_URL', default='')
+JIRA_EMAIL = config('JIRA_EMAIL', default='')
+JIRA_API_TOKEN = config('JIRA_API_TOKEN', default='')
+JIRA_PROJECT_KEY = config('JIRA_PROJECT_KEY', default='')

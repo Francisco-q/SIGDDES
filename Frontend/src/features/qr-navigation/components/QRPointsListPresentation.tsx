@@ -83,20 +83,6 @@ export const QRPointsListPresentation: React.FC<QRPointsListPresentationProps> =
                 <h3 className="font-medium">{reception.name}</h3>
                 <p className="text-sm text-gray-600">{reception.description}</p>
                 <p className="text-xs text-gray-500 mt-2">Campus: {reception.campus}</p>
-                {(onEditReception || onDeleteReception) && (
-                  <div className="flex gap-2 mt-3">
-                    {onEditReception && (
-                      <button type="button" onClick={() => onEditReception(reception)}>
-                        Editar
-                      </button>
-                    )}
-                    {onDeleteReception && (
-                      <button type="button" onClick={() => onDeleteReception(reception.id)}>
-                        Eliminar
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             ))}
           </div>
